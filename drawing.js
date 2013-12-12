@@ -59,10 +59,10 @@ Drawing.prototype.should_finish = function () {
   var point_count = this.outline.points.length;
   var first_point = this.outline.points[0]
   return (point_count > max_points_guard) || 
-	    ((point_count > 4) &&
-	     (this.pen.position.x - first_point.x < this.pen.forward_step) &&
-	     (this.pen.position.y - first_point.y < this.pen.forward_step));
-    }
+	    ((point_count > 4)
+         && (this.pen.position.distance_to_point (first_point)
+             < this.pen.forward_step));
+}
 
 Drawing.prototype.next_pen_distance = function ()
 {
