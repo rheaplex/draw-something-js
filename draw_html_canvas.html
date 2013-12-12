@@ -1,0 +1,57 @@
+<html>
+<head>
+  <title>draw-something</title>
+  <script src="./draw_something_canvas.js" type="text/javascript"></script>
+  <script type="text/javascript">
+
+    // Handle compatibility
+
+    window.requestAnimFrame = (function(callback) {
+      return window.requestAnimationFrame ||
+        window.webkitRequestAnimationFrame ||
+        window.mozRequestAnimationFrame ||
+        window.oRequestAnimationFrame ||
+        window.msRequestAnimationFrame ||
+        function(callback) {
+          window.setTimeout(callback, 1000 / 60);
+        };
+    })();
+
+    // Make the drawing and start animating
+
+    window.onload = function () {
+      var DrawingCanvas = require('drawing_canvas');
+      var canvas = document.getElementById ('canvas');
+      window.draw_something = new DrawingCanvas (canvas, 12);
+      animate();
+    };
+
+    // Update and draw the drawing, until it's finished
+
+    function animate() {
+      var still_drawing = window.draw_something.update();
+
+      var context = draw_something.context;
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.lineJoin = 'round';
+      context.lineWidth = '1px';
+      context.strokeStyle = '#0000FF';
+      draw_something.drawSkeleton ();
+      context.strokeStyle = '#000000';
+      draw_something.drawOutline ();
+
+      if (still_drawing) {
+        requestAnimFrame (function () {
+          animate ();
+        });
+      }
+    }
+
+    // Todo: toggle animation, start new drawing, toggle skeleton
+    
+  </script>
+</head>
+<body>
+<canvas id="canvas" width="600" height="400"></canvas>
+</body>
+</html>
