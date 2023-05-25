@@ -22,28 +22,26 @@
     window.onload = function () {
       var DrawingCanvas = require('drawing_canvas');
       var canvas = document.getElementById ('canvas');
-      window.draw_something = new DrawingCanvas (canvas, 12);
+      // 4 endless loops!
+      //var seed = 4;
+      var seed = ((typeof tokenData !== "undefined") && tokenData.hash) || Date.now();
+      window.draw_something = new DrawingCanvas (canvas, 12, seed);
       animate();
     };
-
+    
     // Update and draw the drawing, until it's finished
 
     function animate() {
       var still_drawing = window.draw_something.update();
 
-      var context = draw_something.context;
-      context.clearRect(0, 0, canvas.width, canvas.height);
-      context.lineJoin = 'round';
-      context.lineWidth = '1px';
-      context.strokeStyle = '#0000FF';
-      draw_something.drawSkeleton ();
-      context.strokeStyle = '#000000';
-      draw_something.drawOutline ();
+      draw_something.drawInProgress ();
 
       if (still_drawing) {
         requestAnimFrame (function () {
           animate ();
         });
+      } else {
+        draw_something.drawComplete();
       }
     }
 
@@ -52,6 +50,6 @@
   </script>
 </head>
 <body>
-<canvas id="canvas" width="600" height="400"></canvas>
+<canvas id="canvas" width="1024" height="768"></canvas>
 </body>
 </html>

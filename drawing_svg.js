@@ -17,50 +17,50 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-var builder = require('xmlbuilder');
+var builder = require("xmlbuilder");
 
-var Drawing = require('./drawing');
+var Drawing = require("./drawing");
 
 var DrawingSVG = function (width, height, num_points) {
   this.drawing = new Drawing (width, height, num_points);
-}
+};
 
 DrawingSVG.prototype.draw = function () {
   while(! this.drawing.should_finish ()) {
     this.drawing.to_next_point ();
   }
-}
+};
 
 DrawingSVG.prototype.polyline_to_SVG = function (polyline, style) {
-  var d = ' M ' + polyline.points[0].x.toFixed(3) 
-      + ' ' + polyline.points[0].y.toFixed(3);
+  var d = " M " + polyline.points[0].x.toFixed(3) 
+      + " " + polyline.points[0].y.toFixed(3);
   for (var i = 1; i < (polyline.points.length); i++) {
-    d += ' L ' + polyline.points[i].x.toFixed(3) 
-      + ' ' + polyline.points[i].y.toFixed(3);
+    d += " L " + polyline.points[i].x.toFixed(3) 
+      + " " + polyline.points[i].y.toFixed(3);
   }
-  var svg = {'path': {'@d':d}};
+  var svg = {"path": {"@d":d}};
   if (style) {
-    svg['path']['@style'] = style;
+    svg["path"]["@style"] = style;
   }
   return svg;
-}
+};
 
 DrawingSVG.prototype.toSVG  = function (show_skeleton, style,
-                                        skeleton_style) {
-  var viewbox = '0 0 ' + this.drawing.width + ' ' + this.drawing.height;
-  var svg = builder.create('svg', 
-                           {version: '1.0', encoding: 'UTF-8',
-                            standalone: true});
-  svg.attribute('xmlns', 'http://www.w3.org/2000/svg');
-  svg.attribute('version', '1.1');
-  svg.attribute('width', this.drawing.width);
-  svg.attribute('height', this.drawing.height);
-  svg.attribute('viewbox', viewbox);
+  skeleton_style) {
+  var viewbox = "0 0 " + this.drawing.width + " " + this.drawing.height;
+  var svg = builder.create("svg", 
+    {version: "1.0", encoding: "UTF-8",
+      standalone: true});
+  svg.attribute("xmlns", "http://www.w3.org/2000/svg");
+  svg.attribute("version", "1.1");
+  svg.attribute("width", this.drawing.width);
+  svg.attribute("height", this.drawing.height);
+  svg.attribute("viewbox", viewbox);
   svg.element(this.polyline_to_SVG(this.drawing.outline, style));
   if (show_skeleton) {
     svg.element(this.polyline_to_SVG(this.drawing.skeleton, skeleton_style));
   }
   return svg.end({ pretty: true});
-}
+};
 
 module.exports = DrawingSVG;
