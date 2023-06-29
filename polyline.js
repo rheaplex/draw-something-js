@@ -1,18 +1,19 @@
 /*  polyline.js - A polyline.
     Copyright 2004-5, 2013 Rhea Myers <rhea@myers.studio>
-  
+    Copyright 2023 Myers Studio Ltd.
+
     This file is part of draw-something js.
-    
+
     draw-something js is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 3 of the License, or
     (at your option) any later version.
-    
+
     draw-something js is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
-    
+
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -30,13 +31,19 @@ Polyline.prototype.append = function (p)
   this.points.push (p);
 };
 
+Polyline.prototype.random_point_in_bounds = function (
+  rng, x, y, width, height
+) {
+    var x_pos = rng.random () * width;
+    var y_pos = rng.random () * height;
+    return new Point (x + x_pos, y + y_pos);
+};
+
 Polyline.prototype.random_points_in_bounds = function (rng, x, y, width,
   height, count) {
   for (var i = 0; i < count; i++)
   {
-    var x_pos = rng.random () * width;
-    var y_pos = rng.random () * height;
-    var p = new Point (x + x_pos, y + y_pos);
+    var p = this.random_point_in_bounds(rng, x, y, width, height);
     this.append(p);
   }
 };
@@ -87,6 +94,45 @@ Polyline.prototype.distance_to_point = function (p)
     }
   }
   return distance_to_poly;
+};
+
+// Generate random points that will not result in the polyline having
+// any points too close to its lines.
+// This is to avoid the pen getting trapped by small gaps between points
+// or between points and lines.
+
+Polyline.prototype.random_points_in_bounds_sep = function (
+  rng, x, y, width, height, count, sep
+) {
+  if (count < 2) {
+    throw new Error('We must generate at least 2 points!');
+  }
+  let genp = () => this.random_point_in_bounds(rng, x, y, width, height);
+  // We need at least one line to test distances from.
+  this.append(genp());
+  this.append(genp());
+  while (this.points.length < count) {
+    const p = genp();
+    // Is this point to close to any existing lines?
+    const dist = this.distance_to_point(p);
+    if (dist < sep) {
+      continue;
+    }
+    // Are any existing points too close to the new line segment
+    // that would be formed by adding the new point?
+    let ok = true;
+    const q = this.points[this.points.length - 1];
+    for (let i = 0; i < this.points.length - 1; i++) {
+      const d = this.distance_from_line_to_point (q, p, this.points[i]);
+      if (d < sep) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok) {
+      this.append(p);
+    }
+  }
 };
 
 Polyline.prototype.top_leftmost_point = function ()

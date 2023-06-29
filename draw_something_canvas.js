@@ -246,14 +246,15 @@ require=(function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c=
 },{}],2:[function(require,module,exports){
 /*  drawing.js - Drawing around a skeleton with a pen.
     Copyright 2004-5, 2013 Rhea Myers <rhea@myers.studio>
-  
+    Copyright 2023 Myers Studio Ltd.
+
     This file is part of draw-something js.
-    
+
     draw-something js is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 3 of the License, or
     (at your option) any later version.
-    
+
     draw-something js is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -272,12 +273,13 @@ var MersenneTwister = require("./MersenneTwister");
 
 var max_points_guard = 5000;
 
-var pen_distance = 5.0;
+var pen_distance = 8.0;
 var pen_distance_fuzz = 1.5; 
-var pen_forward_step = 2.0;
+var pen_forward_step = 1.0;
 var pen_turn_step = 1.0;
-// This will have 1 added to it.
-var max_outline_width = 7.0;
+var min_outline_width = 1;
+var max_outline_width = 8;
+var range_outline_width = (max_outline_width - min_outline_width);
 
 var Drawing = function (width , height , num_points, randseed) {
   this.randseed = randseed;
@@ -289,15 +291,29 @@ var Drawing = function (width , height , num_points, randseed) {
   this.first_point = this.pen.position;
   this.outline = new Polyline();
   this.palette = new Palette(this.rng);
-  this.outline_width = 1 + Math.ceil(this.rng.random() * max_outline_width);
+  this.outline_width = min_outline_width
+    + Math.ceil(this.rng.random() * range_outline_width);
 };
 
-Drawing.prototype.make_skeleton = function (width, height, num_points) {
+/*Drawing.prototype.make_skeleton = function (width, height, num_points) {
   // Inset skeleton 2 * the pen distance from the edge to avoid cropping
   var inset = pen_distance * 2;
   var skeleton = new Polyline ();
   skeleton.random_points_in_bounds (this.rng, inset, inset, width - (inset * 2),
     height - (inset * 2), num_points);
+  return skeleton;
+};*/
+
+Drawing.prototype.make_skeleton = function (width, height, num_points) {
+  // Inset skeleton 2 * the pen distance from the edge to avoid cropping
+  var inset = pen_distance * 2;
+  var skeleton = new Polyline ();
+  skeleton.random_points_in_bounds_sep (this.rng, inset, inset,
+                                        width - (inset * 2, inset),
+                                        height - (inset * 2),
+                                        num_points,
+                                        // Really, really, avoid loops.
+                                        inset * 2);
   return skeleton;
 };
 
@@ -394,8 +410,24 @@ Palette.prototype.random_255 = function (rng) {
   return Math.round(rng.random() * 255);
 };
 
+Palette.prototype.random_percentage = function (rng) {
+  return Math.round(rng.random() * 100);
+};
+
+Palette.prototype.random_angle = function (rng) {
+  return Math.floor(rng.random() * 360);
+};
+
 Palette.prototype.make_colour = function (rng) {
-  return `rgb(${this.random_255(rng)}, ${this.random_255(rng)}, ${this.random_255(rng)})`;
+  return {
+    h: this.random_angle(rng),
+    s: this.random_percentage(rng),
+    l: this.random_percentage(rng)
+  };
+};
+
+Palette.prototype.to_css = function (colour) {
+  return `hsl(${colour.h}deg ${colour.s}% ${colour.l}%)`;
 };
 
 module.exports = Palette;
@@ -427,7 +459,7 @@ var Point = function (x, y) {
 
 Point.prototype.distance_to_point = function (p) {
   return Math.sqrt (Math.pow (p.x - this.x, 2) +
-              Math.pow (p.y - this.y, 2));
+                    Math.pow (p.y - this.y, 2));
 };
 
 module.exports = Point;
@@ -435,19 +467,20 @@ module.exports = Point;
 },{}],5:[function(require,module,exports){
 /*  polyline.js - A polyline.
     Copyright 2004-5, 2013 Rhea Myers <rhea@myers.studio>
-  
+    Copyright 2023 Myers Studio Ltd.
+
     This file is part of draw-something js.
-    
+
     draw-something js is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 3 of the License, or
     (at your option) any later version.
-    
+
     draw-something js is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
-    
+
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -465,13 +498,19 @@ Polyline.prototype.append = function (p)
   this.points.push (p);
 };
 
+Polyline.prototype.random_point_in_bounds = function (
+  rng, x, y, width, height
+) {
+    var x_pos = rng.random () * width;
+    var y_pos = rng.random () * height;
+    return new Point (x + x_pos, y + y_pos);
+};
+
 Polyline.prototype.random_points_in_bounds = function (rng, x, y, width,
   height, count) {
   for (var i = 0; i < count; i++)
   {
-    var x_pos = rng.random () * width;
-    var y_pos = rng.random () * height;
-    var p = new Point (x + x_pos, y + y_pos);
+    var p = this.random_point_in_bounds(rng, x, y, width, height);
     this.append(p);
   }
 };
@@ -522,6 +561,45 @@ Polyline.prototype.distance_to_point = function (p)
     }
   }
   return distance_to_poly;
+};
+
+// Generate random points that will not result in the polyline having
+// any points too close to its lines.
+// This is to avoid the pen getting trapped by small gaps between points
+// or between points and lines.
+
+Polyline.prototype.random_points_in_bounds_sep = function (
+  rng, x, y, width, height, count, sep
+) {
+  if (count < 2) {
+    throw new Error('We must generate at least 2 points!');
+  }
+  let genp = () => this.random_point_in_bounds(rng, x, y, width, height);
+  // We need at least one line to test distances from.
+  this.append(genp());
+  this.append(genp());
+  while (this.points.length < count) {
+    const p = genp();
+    // Is this point to close to any existing lines?
+    const dist = this.distance_to_point(p);
+    if (dist < sep) {
+      continue;
+    }
+    // Are any existing points too close to the new line segment
+    // that would be formed by adding the new point?
+    let ok = true;
+    const q = this.points[this.points.length - 1];
+    for (let i = 0; i < this.points.length - 1; i++) {
+      const d = this.distance_from_line_to_point (q, p, this.points[i]);
+      if (d < sep) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok) {
+      this.append(p);
+    }
+  }
 };
 
 Polyline.prototype.top_leftmost_point = function ()
@@ -641,7 +719,7 @@ DrawingCanvas.prototype.drawPolyline = function (polyline) {
 };
 
 DrawingCanvas.prototype.fillPolyline = function (polyline, style) {
-  this.context.fillStyle = style;
+  this.context.fillStyle = this.drawing.palette.to_css(style);
   this.drawPolyline(polyline);
   this.context.fill();
 };
@@ -649,7 +727,7 @@ DrawingCanvas.prototype.fillPolyline = function (polyline, style) {
 DrawingCanvas.prototype.strokePolyline = function (polyline, style, width) {
   this.context.lineJoin = "round";
   this.context.lineWidth = width;
-  this.context.strokeStyle = style;
+  this.context.strokeStyle = this.drawing.palette.to_css(style);
   this.drawPolyline(polyline);
   this.context.stroke();
 };
@@ -671,14 +749,18 @@ DrawingCanvas.prototype.drawInProgress = function() {
   this.context.lineJoin = "round";
   this.context.lineCap = "round";
   this.context.lineWidth = 1;
-  this.context.strokeStyle = this.drawing.palette.background;
+  this.context.strokeStyle = this.drawing.palette.to_css(
+    this.drawing.palette.background
+  );
   this.context.strokeRect(0, 0, this.canvas.width, this.canvas.height);
   this.drawSkeleton ();
-  this.drawOutline (1);
+  this.drawOutline (this.drawing.outline_width);
 };
 
 DrawingCanvas.prototype.drawComplete = function() {
-  this.context.fillStyle = this.drawing.palette.background;
+  this.context.fillStyle = this.drawing.palette.to_css(
+    this.drawing.palette.background
+  );
   this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
   this.fillOutline ();
   this.drawOutline (this.drawing.outline_width);

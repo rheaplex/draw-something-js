@@ -1,13 +1,14 @@
 /*  drawing.js - Drawing around a skeleton with a pen.
     Copyright 2004-5, 2013 Rhea Myers <rhea@myers.studio>
-  
+    Copyright 2023 Myers Studio Ltd.
+
     This file is part of draw-something js.
-    
+
     draw-something js is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 3 of the License, or
     (at your option) any later version.
-    
+
     draw-something js is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -26,12 +27,13 @@ var MersenneTwister = require("./MersenneTwister");
 
 var max_points_guard = 5000;
 
-var pen_distance = 5.0;
+var pen_distance = 8.0;
 var pen_distance_fuzz = 1.5; 
-var pen_forward_step = 2.0;
+var pen_forward_step = 1.0;
 var pen_turn_step = 1.0;
-// This will have 1 added to it.
-var max_outline_width = 7.0;
+var min_outline_width = 1;
+var max_outline_width = 8;
+var range_outline_width = (max_outline_width - min_outline_width);
 
 var Drawing = function (width , height , num_points, randseed) {
   this.randseed = randseed;
@@ -43,15 +45,29 @@ var Drawing = function (width , height , num_points, randseed) {
   this.first_point = this.pen.position;
   this.outline = new Polyline();
   this.palette = new Palette(this.rng);
-  this.outline_width = 1 + Math.ceil(this.rng.random() * max_outline_width);
+  this.outline_width = min_outline_width
+    + Math.ceil(this.rng.random() * range_outline_width);
 };
 
-Drawing.prototype.make_skeleton = function (width, height, num_points) {
+/*Drawing.prototype.make_skeleton = function (width, height, num_points) {
   // Inset skeleton 2 * the pen distance from the edge to avoid cropping
   var inset = pen_distance * 2;
   var skeleton = new Polyline ();
   skeleton.random_points_in_bounds (this.rng, inset, inset, width - (inset * 2),
     height - (inset * 2), num_points);
+  return skeleton;
+};*/
+
+Drawing.prototype.make_skeleton = function (width, height, num_points) {
+  // Inset skeleton 2 * the pen distance from the edge to avoid cropping
+  var inset = pen_distance * 2;
+  var skeleton = new Polyline ();
+  skeleton.random_points_in_bounds_sep (this.rng, inset, inset,
+                                        width - (inset * 2, inset),
+                                        height - (inset * 2),
+                                        num_points,
+                                        // Really, really, avoid loops.
+                                        inset * 2);
   return skeleton;
 };
 
