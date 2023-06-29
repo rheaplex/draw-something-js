@@ -23,12 +23,24 @@ var Palette = function (rng) {
   this.outline = this.make_colour(rng);
 };
 
-Palette.prototype.random_255 = function (rng) {
-  return Math.round(rng.random() * 255);
+Palette.prototype.random_percentage = function (rng) {
+  return Math.round(rng.random() * 100);
+};
+
+Palette.prototype.random_angle = function (rng) {
+  return Math.floor(rng.random() * 360);
 };
 
 Palette.prototype.make_colour = function (rng) {
-  return `rgb(${this.random_255(rng)}, ${this.random_255(rng)}, ${this.random_255(rng)})`;
+  return {
+    h: this.random_angle(rng),
+    s: this.random_percentage(rng),
+    l: this.random_percentage(rng)
+  };
+};
+
+Palette.prototype.to_css = function (colour) {
+  return `hsl(${colour.h}deg ${colour.s}% ${colour.l}%)`;
 };
 
 module.exports = Palette;

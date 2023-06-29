@@ -40,7 +40,7 @@ DrawingCanvas.prototype.drawPolyline = function (polyline) {
 };
 
 DrawingCanvas.prototype.fillPolyline = function (polyline, style) {
-  this.context.fillStyle = style;
+  this.context.fillStyle = this.drawing.palette.to_css(style);
   this.drawPolyline(polyline);
   this.context.fill();
 };
@@ -48,7 +48,7 @@ DrawingCanvas.prototype.fillPolyline = function (polyline, style) {
 DrawingCanvas.prototype.strokePolyline = function (polyline, style, width) {
   this.context.lineJoin = "round";
   this.context.lineWidth = width;
-  this.context.strokeStyle = style;
+  this.context.strokeStyle = this.drawing.palette.to_css(style);
   this.drawPolyline(polyline);
   this.context.stroke();
 };
@@ -70,14 +70,18 @@ DrawingCanvas.prototype.drawInProgress = function() {
   this.context.lineJoin = "round";
   this.context.lineCap = "round";
   this.context.lineWidth = 1;
-  this.context.strokeStyle = this.drawing.palette.background;
+  this.context.strokeStyle = this.drawing.palette.to_css(
+    this.drawing.palette.background
+  );
   this.context.strokeRect(0, 0, this.canvas.width, this.canvas.height);
   this.drawSkeleton ();
-  this.drawOutline (1);
+  this.drawOutline (this.drawing.outline_width);
 };
 
 DrawingCanvas.prototype.drawComplete = function() {
-  this.context.fillStyle = this.drawing.palette.background;
+  this.context.fillStyle = this.drawing.palette.to_css(
+    this.drawing.palette.background
+  );
   this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
   this.fillOutline ();
   this.drawOutline (this.drawing.outline_width);
