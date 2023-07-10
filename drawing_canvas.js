@@ -18,6 +18,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+var MersenneTwister = require("./MersenneTwister");
 var Drawing = require("./drawing");
 
 var DrawingCanvas = function (canvas, num_points, randseed) {
@@ -25,7 +26,7 @@ var DrawingCanvas = function (canvas, num_points, randseed) {
     canvas.width,
     canvas.height,
     num_points,
-    randseed
+    new MersenneTwister(randseed)
   );
   this.canvas = canvas;
   this.context = this.canvas.getContext ("2d");
