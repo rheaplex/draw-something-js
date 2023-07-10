@@ -23,7 +23,6 @@
 var Polyline = require("./polyline");
 var Turtle = require("./turtle");
 var Palette = require("./palette");
-var MersenneTwister = require("./MersenneTwister");
 
 var max_points_guard = 5000;
 
@@ -35,9 +34,8 @@ var min_outline_width = 1;
 var max_outline_width = 8;
 var range_outline_width = (max_outline_width - min_outline_width);
 
-var Drawing = function (width , height , num_points, randseed) {
-  this.randseed = randseed;
-  this.rng = new MersenneTwister(this.randseed);
+var Drawing = function (width , height , num_points, rng) {
+  this.rng = rng;
   this.width = width;
   this.height = height;
   this.skeleton = this.make_skeleton (this.width, this.height, num_points);

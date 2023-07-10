@@ -378,7 +378,109 @@ Drawing.prototype.to_next_point = function ()
 
 module.exports = Drawing;
 
-},{"./palette":3,"./polyline":5,"./turtle":6}],3:[function(require,module,exports){
+},{"./palette":4,"./polyline":6,"./turtle":7}],3:[function(require,module,exports){
+/*  draw_something_canvas.js - Draw to HTML canvas.
+    Copyright 2004-5, 2013 Rhea Myers <rhea@myers.studio>
+    Copyright 2023 Myers Studio, Ltd.
+  
+    This file is part of draw-something js.
+    
+    draw-something js is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 3 of the License, or
+    (at your option) any later version.
+    
+    draw-something js is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+    
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+var MersenneTwister = require("./MersenneTwister");
+var Drawing = require("./drawing");
+
+var DrawingCanvas = function (canvas, num_points, randseed) {
+  this.drawing = new Drawing (
+    canvas.width,
+    canvas.height,
+    num_points,
+    new MersenneTwister(randseed)
+  );
+  this.canvas = canvas;
+  this.context = this.canvas.getContext ("2d");
+};
+
+DrawingCanvas.prototype.drawPolyline = function (polyline) {
+  this.context.beginPath ();
+  this.context.moveTo (polyline.points[0].x, polyline.points[0].y);
+  for (var i = 1; i < polyline.points.length; i++) {
+    this.context.lineTo(polyline.points[i].x, polyline.points[i].y);
+  }
+};
+
+DrawingCanvas.prototype.fillPolyline = function (polyline, style) {
+  this.context.fillStyle = this.drawing.palette.to_css(style);
+  this.drawPolyline(polyline);
+  this.context.fill();
+};
+
+DrawingCanvas.prototype.strokePolyline = function (polyline, style, width) {
+  this.context.lineJoin = "round";
+  this.context.lineWidth = width;
+  this.context.strokeStyle = this.drawing.palette.to_css(style);
+  this.drawPolyline(polyline);
+  this.context.stroke();
+};
+
+DrawingCanvas.prototype.drawSkeleton = function () {
+  this.strokePolyline (this.drawing.skeleton, this.drawing.palette.foreground, 1);
+};
+
+DrawingCanvas.prototype.drawOutline = function (width) {
+  this.strokePolyline (this.drawing.outline, this.drawing.palette.outline, width);
+};
+
+DrawingCanvas.prototype.fillOutline = function () {
+  this.fillPolyline (this.drawing.outline, this.drawing.palette.foreground);
+};
+
+DrawingCanvas.prototype.drawInProgress = function() {
+  this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+  this.context.lineJoin = "round";
+  this.context.lineCap = "round";
+  this.context.lineWidth = 1;
+  this.context.strokeStyle = this.drawing.palette.to_css(
+    this.drawing.palette.background
+  );
+  this.context.strokeRect(0, 0, this.canvas.width, this.canvas.height);
+  this.drawSkeleton ();
+  this.drawOutline (this.drawing.outline_width);
+};
+
+DrawingCanvas.prototype.drawComplete = function() {
+  this.context.fillStyle = this.drawing.palette.to_css(
+    this.drawing.palette.background
+  );
+  this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
+  this.fillOutline ();
+  this.drawOutline (this.drawing.outline_width);
+};
+
+DrawingCanvas.prototype.update = function () {
+  var active = false;
+  if (! this.drawing.should_finish ()) {
+    this.drawing.to_next_point ();
+    active = true;
+  }
+  return active;
+};
+
+module.exports = DrawingCanvas;
+
+},{"./MersenneTwister":1,"./drawing":2}],4:[function(require,module,exports){
 /*  palette.js - A simple colour scheme.
     Copyright (c) 2023 Myers Studio, Ltd.
 
@@ -426,7 +528,7 @@ Palette.prototype.to_css = function (colour) {
 
 module.exports = Palette;
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 /*  point.js - A 2D point.
     Copyright 2004-5, 2013 Rhea Myers <rhea@myers.studio>
   
@@ -458,7 +560,7 @@ Point.prototype.distance_to_point = function (p) {
 
 module.exports = Point;
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 /*  polyline.js - A polyline.
     Copyright 2004-5, 2013 Rhea Myers <rhea@myers.studio>
     Copyright 2023 Myers Studio Ltd.
@@ -613,7 +715,7 @@ Polyline.prototype.top_leftmost_point = function ()
 
 module.exports = Polyline;
 
-},{"./point":4}],6:[function(require,module,exports){
+},{"./point":5}],7:[function(require,module,exports){
 /*  turtle.js - A classic computer graphics 'turtle'.
     Copyright 2004-5, 2013 Rhea Myers <rhea@myers.studio>
   
@@ -670,9 +772,8 @@ Turtle.prototype.next_point_would_be = function ()
 
 module.exports = Turtle;
 
-},{"./point":4}],"drawing_canvas":[function(require,module,exports){
-/*  draw_something_canvas.js - Draw to HTML canvas.
-    Copyright 2004-5, 2013 Rhea Myers <rhea@myers.studio>
+},{"./point":5}],"drawing_artblocks":[function(require,module,exports){
+/*  drawing_artblocks.js - Draw from Artblocks seed.
     Copyright 2023 Myers Studio, Ltd.
   
     This file is part of draw-something js.
@@ -693,83 +794,38 @@ module.exports = Turtle;
 
 var MersenneTwister = require("./MersenneTwister");
 var Drawing = require("./drawing");
+var DrawingCanvas = require("./drawing_canvas");
 
-var DrawingCanvas = function (canvas, num_points, randseed) {
-  this.drawing = new Drawing (
-    canvas.width,
-    canvas.height,
-    num_points,
-    new MersenneTwister(randseed)
-  );
-  this.canvas = canvas;
-  this.context = this.canvas.getContext ("2d");
+const hexToInts = (hex) => {
+  var numValues = Math.floor(hex.length / 2.0);
+  var ints = new Uint32Array(numValues);
+  for (var c = 0; c < hex.length; c += 2) {
+    ints[Math.floor(c / 2)] = parseInt(hex.substr(c, 2), 16);
+  }
+  return ints;
 };
 
-DrawingCanvas.prototype.drawPolyline = function (polyline) {
-  this.context.beginPath ();
-  this.context.moveTo (polyline.points[0].x, polyline.points[0].y);
-  for (var i = 1; i < polyline.points.length; i++) {
-    this.context.lineTo(polyline.points[i].x, polyline.points[i].y);
+class DrawingArtblocks extends DrawingCanvas {
+  constructor (canvas, num_points, seed) {
+    // This is wasteful, refactor.
+    super(canvas, num_points, seed);
+    const rng = new MersenneTwister();
+    
+    rng.seedArray(hexToInts(seed));
+
+    this.drawing = new Drawing (
+      canvas.width,
+      canvas.height,
+      num_points,
+      rng
+    );
+
+    // Copypasta
+    this.canvas = canvas;
+    this.context = this.canvas.getContext ("2d");
   }
 };
 
-DrawingCanvas.prototype.fillPolyline = function (polyline, style) {
-  this.context.fillStyle = this.drawing.palette.to_css(style);
-  this.drawPolyline(polyline);
-  this.context.fill();
-};
+module.exports = DrawingArtblocks;
 
-DrawingCanvas.prototype.strokePolyline = function (polyline, style, width) {
-  this.context.lineJoin = "round";
-  this.context.lineWidth = width;
-  this.context.strokeStyle = this.drawing.palette.to_css(style);
-  this.drawPolyline(polyline);
-  this.context.stroke();
-};
-
-DrawingCanvas.prototype.drawSkeleton = function () {
-  this.strokePolyline (this.drawing.skeleton, this.drawing.palette.foreground, 1);
-};
-
-DrawingCanvas.prototype.drawOutline = function (width) {
-  this.strokePolyline (this.drawing.outline, this.drawing.palette.outline, width);
-};
-
-DrawingCanvas.prototype.fillOutline = function () {
-  this.fillPolyline (this.drawing.outline, this.drawing.palette.foreground);
-};
-
-DrawingCanvas.prototype.drawInProgress = function() {
-  this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-  this.context.lineJoin = "round";
-  this.context.lineCap = "round";
-  this.context.lineWidth = 1;
-  this.context.strokeStyle = this.drawing.palette.to_css(
-    this.drawing.palette.background
-  );
-  this.context.strokeRect(0, 0, this.canvas.width, this.canvas.height);
-  this.drawSkeleton ();
-  this.drawOutline (this.drawing.outline_width);
-};
-
-DrawingCanvas.prototype.drawComplete = function() {
-  this.context.fillStyle = this.drawing.palette.to_css(
-    this.drawing.palette.background
-  );
-  this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
-  this.fillOutline ();
-  this.drawOutline (this.drawing.outline_width);
-};
-
-DrawingCanvas.prototype.update = function () {
-  var active = false;
-  if (! this.drawing.should_finish ()) {
-    this.drawing.to_next_point ();
-    active = true;
-  }
-  return active;
-};
-
-module.exports = DrawingCanvas;
-
-},{"./MersenneTwister":1,"./drawing":2}]},{},["drawing_canvas"]);
+},{"./MersenneTwister":1,"./drawing":2,"./drawing_canvas":3}]},{},["drawing_artblocks"]);
