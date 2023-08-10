@@ -22,14 +22,28 @@ var MersenneTwister = require("./MersenneTwister");
 var Drawing = require("./drawing");
 
 var DrawingCanvas = function (canvas, num_points, randseed) {
+  this.destinationCanvas = canvas;
+  this.destinationContext = this.destinationCanvas.getContext("2d");
+  this.canvas = new OffscreenCanvas(7680, 4320);
+  this.context = this.canvas.getContext ("2d");
   this.drawing = new Drawing (
-    canvas.width,
-    canvas.height,
+    this.canvas.width,
+    this.canvas.height,
     num_points,
     new MersenneTwister(randseed)
   );
-  this.canvas = canvas;
-  this.context = this.canvas.getContext ("2d");
+
+};
+
+DrawingCanvas.prototype.copyToCanvas = function () {
+  //const bitmap = this.canvas.transferToImageBitmap();
+  this.destinationContext.drawImage(
+    this.canvas,
+    0,
+    0,
+    this.destinationCanvas.width,
+    this.destinationCanvas.height
+  );
 };
 
 DrawingCanvas.prototype.drawPolyline = function (polyline) {
@@ -77,6 +91,7 @@ DrawingCanvas.prototype.drawInProgress = function() {
   this.context.strokeRect(0, 0, this.canvas.width, this.canvas.height);
   this.drawSkeleton ();
   this.drawOutline (this.drawing.outline_width);
+  this.copyToCanvas();
 };
 
 DrawingCanvas.prototype.drawComplete = function() {
@@ -86,6 +101,7 @@ DrawingCanvas.prototype.drawComplete = function() {
   this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
   this.fillOutline ();
   this.drawOutline (this.drawing.outline_width);
+  this.copyToCanvas();
 };
 
 DrawingCanvas.prototype.update = function () {
