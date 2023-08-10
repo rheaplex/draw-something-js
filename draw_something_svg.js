@@ -701,7 +701,7 @@ module.exports = Turtle;
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
-    
+
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -780,7 +780,7 @@ DrawingSVG.prototype.drawFill = function() {
     'd',
     this.polyline_to_path(this.drawing.outline)
   );
-  
+
 };
 
 DrawingSVG.prototype.drawInProgress = function() {
@@ -803,10 +803,10 @@ DrawingSVG.prototype.drawComplete = function() {
 };
 
 DrawingSVG.prototype.polyline_to_path = function (polyline) {
-  var d = " M " + polyline.points[0].x.toFixed(3) 
+  var d = " M " + polyline.points[0].x.toFixed(3)
       + " " + polyline.points[0].y.toFixed(3);
   for (var i = 1; i < (polyline.points.length); i++) {
-    d += " L " + polyline.points[i].x.toFixed(3) 
+    d += " L " + polyline.points[i].x.toFixed(3)
       + " " + polyline.points[i].y.toFixed(3);
   }
   return d;
