@@ -21,14 +21,7 @@ var MersenneTwister = require("./MersenneTwister");
 var Drawing = require("./drawing");
 var DrawingCanvas = require("./drawing_canvas");
 
-const hexToInts = (hex) => {
-  var numValues = Math.floor(hex.length / 2.0);
-  var ints = new Uint32Array(numValues);
-  for (var c = 0; c < hex.length; c += 2) {
-    ints[Math.floor(c / 2)] = parseInt(hex.substr(c, 2), 16);
-  }
-  return ints;
-};
+
 
 class DrawingArtblocks extends DrawingCanvas {
   constructor (canvas, num_points, seed) {

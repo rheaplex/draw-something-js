@@ -266,6 +266,7 @@ require=(function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c=
 
 // Keep these names lowercase as they should be in the object...
 
+var MersenneTwister = require("./MersenneTwister");
 var Polyline = require("./polyline");
 var Turtle = require("./turtle");
 var Palette = require("./palette");
@@ -280,8 +281,22 @@ var min_outline_width = 1;
 var max_outline_width = 8;
 var range_outline_width = (max_outline_width - min_outline_width);
 
-var Drawing = function (width , height , num_points, rng) {
-  this.rng = rng;
+const hexToInts = (hex) => {
+  var numValues = Math.floor(hex.length / 2.0);
+  var ints = new Uint32Array(numValues);
+  for (var c = 0; c < hex.length; c += 2) {
+    ints[Math.floor(c / 2)] = parseInt(hex.substr(c, 2), 16);
+  }
+  return ints;
+};
+
+var Drawing = function (width , height , num_points, seed) {
+  if (typeof seed === 'string') {
+    this.rng = new MersenneTwister();
+    this.rng.seedArray(hexToInts(seed));
+  } else {
+    this.rng = new MersenneTwister(seed);
+  }
   this.width = width;
   this.height = height;
   this.skeleton = this.make_skeleton (this.width, this.height, num_points);
@@ -378,7 +393,7 @@ Drawing.prototype.to_next_point = function ()
 
 module.exports = Drawing;
 
-},{"./palette":3,"./polyline":5,"./turtle":6}],3:[function(require,module,exports){
+},{"./MersenneTwister":1,"./palette":3,"./polyline":5,"./turtle":6}],3:[function(require,module,exports){
 /*  palette.js - A simple colour scheme.
     Copyright (c) 2023 Myers Studio, Ltd.
 
@@ -695,14 +710,28 @@ var MersenneTwister = require("./MersenneTwister");
 var Drawing = require("./drawing");
 
 var DrawingCanvas = function (canvas, num_points, randseed) {
+  this.destinationCanvas = canvas;
+  this.destinationContext = this.destinationCanvas.getContext("2d");
+  this.canvas = new OffscreenCanvas(7680, 4320);
+  this.context = this.canvas.getContext ("2d");
   this.drawing = new Drawing (
-    canvas.width,
-    canvas.height,
+    this.canvas.width,
+    this.canvas.height,
     num_points,
     new MersenneTwister(randseed)
   );
-  this.canvas = canvas;
-  this.context = this.canvas.getContext ("2d");
+
+};
+
+DrawingCanvas.prototype.copyToCanvas = function () {
+  //const bitmap = this.canvas.transferToImageBitmap();
+  this.destinationContext.drawImage(
+    this.canvas,
+    0,
+    0,
+    this.destinationCanvas.width,
+    this.destinationCanvas.height
+  );
 };
 
 DrawingCanvas.prototype.drawPolyline = function (polyline) {
@@ -750,6 +779,7 @@ DrawingCanvas.prototype.drawInProgress = function() {
   this.context.strokeRect(0, 0, this.canvas.width, this.canvas.height);
   this.drawSkeleton ();
   this.drawOutline (this.drawing.outline_width);
+  this.copyToCanvas();
 };
 
 DrawingCanvas.prototype.drawComplete = function() {
@@ -759,6 +789,7 @@ DrawingCanvas.prototype.drawComplete = function() {
   this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
   this.fillOutline ();
   this.drawOutline (this.drawing.outline_width);
+  this.copyToCanvas();
 };
 
 DrawingCanvas.prototype.update = function () {

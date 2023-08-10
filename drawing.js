@@ -20,6 +20,7 @@
 
 // Keep these names lowercase as they should be in the object...
 
+var MersenneTwister = require("./MersenneTwister");
 var Polyline = require("./polyline");
 var Turtle = require("./turtle");
 var Palette = require("./palette");
@@ -34,8 +35,22 @@ var min_outline_width = 1;
 var max_outline_width = 8;
 var range_outline_width = (max_outline_width - min_outline_width);
 
-var Drawing = function (width , height , num_points, rng) {
-  this.rng = rng;
+const hexToInts = (hex) => {
+  var numValues = Math.floor(hex.length / 2.0);
+  var ints = new Uint32Array(numValues);
+  for (var c = 0; c < hex.length; c += 2) {
+    ints[Math.floor(c / 2)] = parseInt(hex.substr(c, 2), 16);
+  }
+  return ints;
+};
+
+var Drawing = function (width , height , num_points, seed) {
+  if (typeof seed === 'string') {
+    this.rng = new MersenneTwister();
+    this.rng.seedArray(hexToInts(seed));
+  } else {
+    this.rng = new MersenneTwister(seed);
+  }
   this.width = width;
   this.height = height;
   this.skeleton = this.make_skeleton (this.width, this.height, num_points);
