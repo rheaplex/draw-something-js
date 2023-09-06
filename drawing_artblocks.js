@@ -27,6 +27,10 @@ let svg;
 let drawing;
 
 function createSVGElement () {
+  let existingSvg = document.getElementById("svg");
+  if (existingSvg != null) {
+     document.body.remove(existingSvg);
+  }
   svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.id = "svg";
   svg.setAttribute("viewBox", `0 0 ${WIDTH} ${HEIGHT}`);
@@ -63,11 +67,6 @@ function draw () {
     requestAnimationFrame(draw);
   } else {
     drawing.drawComplete();
-    /*if (repeat) {
-      window.tokenData = undefined;
-      // 30 seconds
-      setTimeout(init, 30 * 1000);
-    }*/
   }
 }
 

@@ -30,7 +30,7 @@ var DrawingSVG = function (svg, num_points, randseed) {
     randseed
   );
   const background = this.svg.getElementById("background");
-  background.style.fill = "none";
+  background.style.fill = "white";
   background.style.stroke = this.drawing.palette.to_css(
     this.drawing.palette.background
   );
