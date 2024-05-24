@@ -18,13 +18,13 @@
 */
 
 var Point = function (x, y) {
-  this.x = x;
-  this.y = y;
-};
+	this.x = x;
+	this.y = y;
+}
 
 Point.prototype.distance_to_point = function (p) {
   return Math.sqrt (Math.pow (p.x - this.x, 2) +
-                    Math.pow (p.y - this.y, 2));
-};
+			        Math.pow (p.y - this.y, 2));
+}
 
 module.exports = Point;

@@ -17,11 +17,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-var DrawingSVG = require("./drawing_svg");
+var DrawingSVG = require('./drawing_svg');
 
 var draw_something = new DrawingSVG(600, 400, 12);
 draw_something.draw();
-var svg = draw_something.toSVG(true, "stroke: black 5px; fill: none;",
-  "stroke: red 1px; fill: none");
+var svg = draw_something.toSVG(true, 'stroke: black 5px; fill: none;',
+                               'stroke: red 1px; fill: none');
 
 console.log(svg);

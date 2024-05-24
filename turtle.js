@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-var Point = require("./point");
+var Point = require('./point');
 
 var DEGREES_TO_RADIANS = (Math.PI * 2.0) / 360.0;
 
@@ -27,29 +27,29 @@ var Turtle = function (position, forward_step, turn_step) {
   this.position = position;
   this.forward_step = forward_step;
   this.turn_step = turn_step;
-};
+}
 
 Turtle.prototype.left = function () {
   this.direction -= this.turn_step;
-};
+}
 
 Turtle.prototype.right = function ()
 {
   this.direction += this.turn_step;
-};
+}
 
 Turtle.prototype.forward = function ()
 {
   this.position = this.next_point_would_be ();
-};
+}
 
 Turtle.prototype.next_point_would_be = function ()
 {
   var x = this.position.x +
-    (this.forward_step * Math.sin (this.direction * DEGREES_TO_RADIANS));
+	  (this.forward_step * Math.sin (this.direction * DEGREES_TO_RADIANS));
   var y = this.position.y +
-    (this.forward_step * Math.cos (this.direction * DEGREES_TO_RADIANS));
+	  (this.forward_step * Math.cos (this.direction * DEGREES_TO_RADIANS));
   return new Point (x, y);
-};
+}
 
 module.exports = Turtle;

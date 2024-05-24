@@ -1,292 +1,14 @@
 require=(function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
-(function (root, factory) {
-  "use strict";
-
-  if (typeof exports === "object") {
-    module.exports = factory();
-  } else if (typeof define === "function" && define.amd) {
-    define(factory);
-  } else {
-    root.MersenneTwister = factory();
-  }
-}(this, function () {
-  /**
-     * A standalone, pure JavaScript implementation of the Mersenne Twister pseudo random number generator. Compatible
-     * with Node.js, requirejs and browser environments. Packages are available for npm, Jam and Bower.
-     *
-     * @module MersenneTwister
-     * @author Raphael Pigulla <pigulla@four66.com>
-     * @license See the attached LICENSE file.
-     * @version 0.2.3
-     */
-
-  /* The license file for MersenneTwister:
-Copyright (C) 1997 - 2002, Makoto Matsumoto and Takuji Nishimura,
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
-
- 1. Redistributions of source code must retain the above copyright
-    notice, this list of conditions and the following disclaimer.
-
- 2. Redistributions in binary form must reproduce the above copyright
-    notice, this list of conditions and the following disclaimer in the
-    documentation and/or other materials provided with the distribution.
-
- 3. The names of its contributors may not be used to endorse or promote
-    products derived from this software without specific prior written
-    permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-  */
-
-  /*
-     * Most comments were stripped from the source. If needed you can still find them in the original C code:
-     * http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/MT2002/CODES/mt19937ar.c
-     *
-     * The original port to JavaScript, on which this file is based, was done by Sean McCullough. It can be found at:
-     * https://gist.github.com/banksean/300494
-     */
-  "use strict";
-
-  var MAX_INT = 4294967296.0,
-    N = 624,
-    M = 397,
-    UPPER_MASK = 0x80000000,
-    LOWER_MASK = 0x7fffffff,
-    MATRIX_A = 0x9908b0df;
-
-  /**
-     * Instantiates a new Mersenne Twister.
-     *
-     * @constructor
-     * @alias module:MersenneTwister
-     * @since 0.1.0
-     * @param {number=} seed The initial seed value.
-     */
-  var MersenneTwister = function (seed) {
-    if (typeof seed === "undefined") {
-      seed = new Date().getTime();
-    }
-
-    this.mt = new Array(N);
-    this.mti = N + 1;
-
-    this.seed(seed);
-  };
-
-  /**
-     * Initializes the state vector by using one unsigned 32-bit integer "seed", which may be zero.
-     *
-     * @since 0.1.0
-     * @param {number} seed The seed value.
-     */
-  MersenneTwister.prototype.seed = function (seed) {
-    var s;
-
-    this.mt[0] = seed >>> 0;
-
-    for (this.mti = 1; this.mti < N; this.mti++) {
-      s = this.mt[this.mti - 1] ^ (this.mt[this.mti - 1] >>> 30);
-      this.mt[this.mti] =
-                (((((s & 0xffff0000) >>> 16) * 1812433253) << 16) + (s & 0x0000ffff) * 1812433253) + this.mti;
-      this.mt[this.mti] >>>= 0;
-    }
-  };
-
-  /**
-     * Initializes the state vector by using an array key[] of unsigned 32-bit integers of the specified length. If
-     * length is smaller than 624, then each array of 32-bit integers gives distinct initial state vector. This is
-     * useful if you want a larger seed space than 32-bit word.
-     *
-     * @since 0.1.0
-     * @param {array} vector The seed vector.
-     */
-  MersenneTwister.prototype.seedArray = function (vector) {
-    var i = 1,
-      j = 0,
-      k = N > vector.length ? N : vector.length,
-      s;
-
-    this.seed(19650218);
-
-    for (; k > 0; k--) {
-      s = this.mt[i-1] ^ (this.mt[i-1] >>> 30);
-
-      this.mt[i] = (this.mt[i] ^ (((((s & 0xffff0000) >>> 16) * 1664525) << 16) + ((s & 0x0000ffff) * 1664525))) +
-                vector[j] + j;
-      this.mt[i] >>>= 0;
-      i++;
-      j++;
-      if (i >= N) {
-        this.mt[0] = this.mt[N - 1];
-        i = 1;
-      }
-      if (j >= vector.length) {
-        j = 0;
-      }
-    }
-
-    for (k = N - 1; k; k--) {
-      s = this.mt[i - 1] ^ (this.mt[i - 1] >>> 30);
-      this.mt[i] =
-                (this.mt[i] ^ (((((s & 0xffff0000) >>> 16) * 1566083941) << 16) + (s & 0x0000ffff) * 1566083941)) - i;
-      this.mt[i] >>>= 0;
-      i++;
-      if (i >= N) {
-        this.mt[0] = this.mt[N - 1];
-        i = 1;
-      }
-    }
-
-    this.mt[0] = 0x80000000;
-  };
-
-  /**
-     * Generates a random unsigned 32-bit integer.
-     *
-     * @since 0.1.0
-     * @returns {number}
-     */
-  MersenneTwister.prototype.int = function () {
-    var y,
-      kk,
-      mag01 = new Array(0, MATRIX_A);
-
-    if (this.mti >= N) {
-      if (this.mti === N + 1) {
-        this.seed(5489);
-      }
-
-      for (kk = 0; kk < N - M; kk++) {
-        y = (this.mt[kk] & UPPER_MASK) | (this.mt[kk + 1] & LOWER_MASK);
-        this.mt[kk] = this.mt[kk + M] ^ (y >>> 1) ^ mag01[y & 1];
-      }
-
-      for (; kk < N - 1; kk++) {
-        y = (this.mt[kk] & UPPER_MASK) | (this.mt[kk + 1] & LOWER_MASK);
-        this.mt[kk] = this.mt[kk + (M - N)] ^ (y >>> 1) ^ mag01[y & 1];
-      }
-
-      y = (this.mt[N - 1] & UPPER_MASK) | (this.mt[0] & LOWER_MASK);
-      this.mt[N - 1] = this.mt[M - 1] ^ (y >>> 1) ^ mag01[y & 1];
-      this.mti = 0;
-    }
-
-    y = this.mt[this.mti++];
-
-    y ^= (y >>> 11);
-    y ^= (y << 7) & 0x9d2c5680;
-    y ^= (y << 15) & 0xefc60000;
-    y ^= (y >>> 18);
-
-    return y >>> 0;
-  };
-
-  /**
-     * Generates a random unsigned 31-bit integer.
-     *
-     * @since 0.1.0
-     * @returns {number}
-     */
-  MersenneTwister.prototype.int31 = function () {
-    return this.int() >>> 1;
-  };
-
-  /**
-     * Generates a random real in the interval [0;1] with 32-bit resolution.
-     *
-     * @since 0.1.0
-     * @returns {number}
-     */
-  MersenneTwister.prototype.real = function () {
-    return this.int() * (1.0 / (MAX_INT - 1));
-  };
-
-  /**
-     * Generates a random real in the interval ]0;1[ with 32-bit resolution.
-     *
-     * @since 0.1.0
-     * @returns {number}
-     */
-  MersenneTwister.prototype.realx = function () {
-    return (this.int() + 0.5) * (1.0 / MAX_INT);
-  };
-
-  /**
-     * Generates a random real in the interval [0;1[ with 32-bit resolution.
-     *
-     * @since 0.1.0
-     * @returns {number}
-     */
-  MersenneTwister.prototype.rnd = function () {
-    return this.int() * (1.0 / MAX_INT);
-  };
-
-  /**
-     * Generates a random real in the interval [0;1[ with 32-bit resolution.
-     *
-     * Same as .rnd() method - for consistency with Math.random() interface.
-     *
-     * @since 0.2.0
-     * @returns {number}
-     */
-  MersenneTwister.prototype.random = MersenneTwister.prototype.rnd;
-
-  /**
-     * Generates a random real in the interval [0;1[ with 53-bit resolution.
-     *
-     * @since 0.1.0
-     * @returns {number}
-     */
-  MersenneTwister.prototype.rndHiRes = function () {
-    var a = this.int() >>> 5,
-      b = this.int() >>> 6;
-
-    return (a * 67108864.0 + b) * (1.0 / 9007199254740992.0);
-  };
-
-  var instance = new MersenneTwister();
-
-  /**
-     * A static version of [rnd]{@link module:MersenneTwister#rnd} on a randomly seeded instance.
-     *
-     * @static
-     * @function random
-     * @memberof module:MersenneTwister
-     * @returns {number}
-     */
-  MersenneTwister.random = function () {
-    return instance.rnd();
-  };
-
-  return MersenneTwister;
-}));
-
-},{}],2:[function(require,module,exports){
 /*  drawing.js - Drawing around a skeleton with a pen.
     Copyright 2004-5, 2013 Rhea Myers <rhea@myers.studio>
-    Copyright 2023 Myers Studio Ltd.
-
+  
     This file is part of draw-something js.
-
+    
     draw-something js is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 3 of the License, or
     (at your option) any later version.
-
+    
     draw-something js is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -298,121 +20,85 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // Keep these names lowercase as they should be in the object...
 
-var MersenneTwister = require("./MersenneTwister");
-var Polyline = require("./polyline");
-var Turtle = require("./turtle");
-var Palette = require("./palette");
+var Polyline = require('./polyline');
+var Turtle = require('./turtle');
 
 var max_points_guard = 5000;
 
-var pen_distance = 8.0;
+var pen_distance = 5.0;
 var pen_distance_fuzz = 1.5; 
-var pen_forward_step = 1.0;
+var pen_forward_step = 2.0;
 var pen_turn_step = 1.0;
-var min_outline_width = 1;
-var max_outline_width = 8;
-var range_outline_width = (max_outline_width - min_outline_width);
 
-const hexToInts = (hex) => {
-  var numValues = Math.floor(hex.length / 2.0);
-  var ints = new Uint32Array(numValues);
-  for (var c = 0; c < hex.length; c += 2) {
-    ints[Math.floor(c / 2)] = parseInt(hex.substr(c, 2), 16);
-  }
-  return ints;
-};
-
-var Drawing = function (width , height , num_points, seed) {
-  if (typeof seed === 'string') {
-    this.rng = new MersenneTwister();
-    this.rng.seedArray(hexToInts(seed));
-  } else {
-    this.rng = new MersenneTwister(seed);
-  }
+var Drawing = function (width , height , num_points) {
   this.width = width;
   this.height = height;
   this.skeleton = this.make_skeleton (this.width, this.height, num_points);
   this.pen = this.make_pen ();
   this.first_point = this.pen.position;
   this.outline = new Polyline();
-  this.palette = new Palette(this.rng);
-  this.outline_width = min_outline_width
-    + Math.ceil(this.rng.random() * range_outline_width);
-};
-
-/*Drawing.prototype.make_skeleton = function (width, height, num_points) {
-  // Inset skeleton 2 * the pen distance from the edge to avoid cropping
-  var inset = pen_distance * 2;
-  var skeleton = new Polyline ();
-  skeleton.random_points_in_bounds (this.rng, inset, inset, width - (inset * 2),
-    height - (inset * 2), num_points);
-  return skeleton;
-};*/
+}
 
 Drawing.prototype.make_skeleton = function (width, height, num_points) {
   // Inset skeleton 2 * the pen distance from the edge to avoid cropping
   var inset = pen_distance * 2;
-  var skeleton = new Polyline ();
-  skeleton.random_points_in_bounds_sep (this.rng, inset, inset,
-                                        width - (inset * 2, inset),
-                                        height - (inset * 2),
-                                        num_points,
-                                        // Really, really, avoid loops.
-                                        inset * 2);
+  skeleton = new Polyline ();
+  skeleton.random_points_in_bounds (inset, inset, width - (inset * 2),
+					                height - (inset * 2), num_points);
   return skeleton;
-};
+}
 
 Drawing.prototype.make_pen = function () {
   var top_left = this.skeleton.top_leftmost_point ();
   top_left.y -= pen_distance;
-  var pen = new Turtle (top_left, pen_distance, pen_distance_fuzz,
-    pen_forward_step, pen_turn_step);
+  pen = new Turtle (top_left, pen_distance, pen_distance_fuzz,
+			        pen_forward_step, pen_turn_step);
   return pen;
-};
+}
 
 Drawing.prototype.should_finish = function () {
   var point_count = this.outline.points.length;
-  var first_point = this.outline.points[0];
+  var first_point = this.outline.points[0]
   return (point_count > max_points_guard) || 
-      ((point_count > 4)
+	    ((point_count > 4)
          && (this.pen.position.distance_to_point (first_point)
              < this.pen.forward_step));
-};
+}
 
 Drawing.prototype.next_pen_distance = function ()
 {
   return this.skeleton.distance_to_point (this.pen.next_point_would_be ());
-};
+}
 
 Drawing.prototype.next_pen_too_far = function ()
 {
-  return (this.rng.random () * pen_distance_fuzz) <
-  (pen_distance - this.next_pen_distance (this.skeleton));
-};
+  return (Math.random () * pen_distance_fuzz) <
+	(pen_distance - this.next_pen_distance (this.skeleton));
+}
 
 Drawing.prototype.next_pen_too_close = function ()
 {
-  return (this.rng.random () * pen_distance_fuzz) <
-  (this.next_pen_distance (this.skeleton) - pen_distance);
-};
+	return (Math.random () * pen_distance_fuzz) <
+	(this.next_pen_distance (this.skeleton) - pen_distance);
+}
 
 Drawing.prototype.ensure_next_pen_far_enough = function ()
 {
   while (this.next_pen_too_close (this.skeleton))
-    this.pen.left ();
-};
+	this.pen.left ();
+}
 
 Drawing.prototype.ensure_next_pen_close_enough = function ()
 {
   while (this.next_pen_too_far (this.skeleton))
-    this.pen.right ();
-};
+	this.pen.right ();
+}
 
 Drawing.prototype.adjust_next_pen = function ()
 {
   this.ensure_next_pen_far_enough ();
   this.ensure_next_pen_close_enough ();
-};
+}
 
 Drawing.prototype.to_next_point = function ()
 {
@@ -421,59 +107,2352 @@ Drawing.prototype.to_next_point = function ()
   this.outline.append(this.pen.position);
   this.point_count ++;
   return this.pen.position;
-};
+}
 
 module.exports = Drawing;
 
-},{"./MersenneTwister":1,"./palette":3,"./polyline":5,"./turtle":6}],3:[function(require,module,exports){
-/*  palette.js - A simple colour scheme.
-    Copyright (c) 2023 Myers Studio, Ltd.
+},{"./polyline":17,"./turtle":18}],2:[function(require,module,exports){
+// Generated by CoffeeScript 1.6.1
+(function() {
+  var XMLAttribute, _;
 
-    This file is part of draw-something js.
+  _ = require('underscore');
 
-    draw-something js is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 3 of the License, or
-    (at your option) any later version.
+  module.exports = XMLAttribute = (function() {
 
-    draw-something js is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    function XMLAttribute(parent, name, value) {
+      this.stringify = parent.stringify;
+      if (name == null) {
+        throw new Error("Missing attribute name");
+      }
+      this.name = this.stringify.attName(name);
+      this.value = this.stringify.attValue(value);
+    }
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+    XMLAttribute.prototype.toString = function(options, level) {
+      var indent, newline, pretty, r, space;
+      pretty = (options != null ? options.pretty : void 0) || false;
+      indent = (options != null ? options.indent : void 0) || '  ';
+      newline = (options != null ? options.newline : void 0) || '\n';
+      level || (level = 0);
+      space = new Array(level).join(indent);
+      r = ' ' + this.name + '="' + this.value + '"';
+      return r;
+    };
 
-var Palette = function (rng) {
-  this.background = this.make_colour(rng);
-  this.foreground = this.make_colour(rng);
-  this.outline = this.make_colour(rng);
-};
+    return XMLAttribute;
 
-Palette.prototype.random_percentage = function (rng) {
-  return Math.round(rng.random() * 100);
-};
+  })();
 
-Palette.prototype.random_angle = function (rng) {
-  return Math.floor(rng.random() * 360);
-};
+}).call(this);
 
-Palette.prototype.make_colour = function (rng) {
-  return {
-    h: this.random_angle(rng),
-    s: this.random_percentage(rng),
-    l: this.random_percentage(rng)
+},{"underscore":15}],3:[function(require,module,exports){
+// Generated by CoffeeScript 1.6.1
+(function() {
+  var XMLBuilder, XMLDeclaration, XMLDocType, XMLElement, XMLStringifier, _;
+
+  _ = require('underscore');
+
+  XMLStringifier = require('./XMLStringifier');
+
+  XMLDeclaration = require('./XMLDeclaration');
+
+  XMLDocType = require('./XMLDocType');
+
+  XMLElement = require('./XMLElement');
+
+  module.exports = XMLBuilder = (function() {
+
+    function XMLBuilder(name, options) {
+      var root;
+      if (name == null) {
+        throw new Error("Root element needs a name");
+      }
+      if (options == null) {
+        options = {};
+      }
+      this.stringify = new XMLStringifier(options);
+      if (!options.headless) {
+        this.xmldec = new XMLDeclaration(this, options);
+        if (options.ext != null) {
+          this.doctype = new XMLDocType(this, options);
+        }
+      }
+      root = new XMLElement(this, 'doc');
+      root = root.element(name);
+      root.isRoot = true;
+      root.documentObject = this;
+      this.rootObject = root;
+    }
+
+    XMLBuilder.prototype.root = function() {
+      return this.rootObject;
+    };
+
+    XMLBuilder.prototype.end = function(options) {
+      return toString(options);
+    };
+
+    XMLBuilder.prototype.toString = function(options) {
+      var r;
+      r = '';
+      if (this.xmldec != null) {
+        r += this.xmldec.toString(options);
+      }
+      if (this.doctype != null) {
+        r += this.doctype.toString(options);
+      }
+      return r += this.rootObject.toString(options);
+    };
+
+    return XMLBuilder;
+
+  })();
+
+}).call(this);
+
+},{"./XMLDeclaration":6,"./XMLDocType":7,"./XMLElement":8,"./XMLStringifier":12,"underscore":15}],4:[function(require,module,exports){
+// Generated by CoffeeScript 1.6.1
+(function() {
+  var XMLCData, XMLNode, _,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  _ = require('underscore');
+
+  XMLNode = require('./XMLNode');
+
+  module.exports = XMLCData = (function(_super) {
+
+    __extends(XMLCData, _super);
+
+    function XMLCData(parent, text) {
+      XMLCData.__super__.constructor.call(this, parent);
+      if (text == null) {
+        throw new Error("Missing CDATA text");
+      }
+      this.text = this.stringify.cdata(text);
+    }
+
+    XMLCData.prototype.toString = function(options, level) {
+      var indent, newline, pretty, r, space;
+      pretty = (options != null ? options.pretty : void 0) || false;
+      indent = (options != null ? options.indent : void 0) || '  ';
+      newline = (options != null ? options.newline : void 0) || '\n';
+      level || (level = 0);
+      space = new Array(level + 1).join(indent);
+      r = '';
+      if (pretty) {
+        r += space;
+      }
+      r += '<![CDATA[' + this.text + ']]>';
+      if (pretty) {
+        r += newline;
+      }
+      return r;
+    };
+
+    return XMLCData;
+
+  })(XMLNode);
+
+}).call(this);
+
+},{"./XMLNode":9,"underscore":15}],5:[function(require,module,exports){
+// Generated by CoffeeScript 1.6.1
+(function() {
+  var XMLComment, XMLNode, _,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  _ = require('underscore');
+
+  XMLNode = require('./XMLNode');
+
+  module.exports = XMLComment = (function(_super) {
+
+    __extends(XMLComment, _super);
+
+    function XMLComment(parent, text) {
+      XMLComment.__super__.constructor.call(this, parent);
+      if (text == null) {
+        throw new Error("Missing comment text");
+      }
+      this.text = this.stringify.comment(text);
+    }
+
+    XMLComment.prototype.toString = function(options, level) {
+      var indent, newline, pretty, r, space;
+      pretty = (options != null ? options.pretty : void 0) || false;
+      indent = (options != null ? options.indent : void 0) || '  ';
+      newline = (options != null ? options.newline : void 0) || '\n';
+      level || (level = 0);
+      space = new Array(level + 1).join(indent);
+      r = '';
+      if (pretty) {
+        r += space;
+      }
+      r += '<!-- ' + this.text + ' -->';
+      if (pretty) {
+        r += newline;
+      }
+      return r;
+    };
+
+    return XMLComment;
+
+  })(XMLNode);
+
+}).call(this);
+
+},{"./XMLNode":9,"underscore":15}],6:[function(require,module,exports){
+// Generated by CoffeeScript 1.6.1
+(function() {
+  var XMLDeclaration, XMLNode, _,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  _ = require('underscore');
+
+  XMLNode = require('./XMLNode');
+
+  module.exports = XMLDeclaration = (function(_super) {
+
+    __extends(XMLDeclaration, _super);
+
+    function XMLDeclaration(parent, options) {
+      XMLDeclaration.__super__.constructor.call(this, parent);
+      options = _.extend({
+        'version': '1.0'
+      }, options);
+      if (options.version != null) {
+        this.version = this.stringify.xmlVersion(options.version);
+      }
+      if (options.encoding != null) {
+        this.encoding = this.stringify.xmlEncoding(options.encoding);
+      }
+      if (options.standalone != null) {
+        this.standalone = this.stringify.xmlStandalone(options.standalone);
+      }
+    }
+
+    XMLDeclaration.prototype.toString = function(options, level) {
+      var indent, newline, pretty, r, space;
+      pretty = (options != null ? options.pretty : void 0) || false;
+      indent = (options != null ? options.indent : void 0) || '  ';
+      newline = (options != null ? options.newline : void 0) || '\n';
+      level || (level = 0);
+      space = new Array(level + 1).join(indent);
+      r = '';
+      if (pretty) {
+        r += space;
+      }
+      r += '<?xml';
+      if (this.version != null) {
+        r += ' version="' + this.version + '"';
+      }
+      if (this.encoding != null) {
+        r += ' encoding="' + this.encoding + '"';
+      }
+      if (this.standalone != null) {
+        r += ' standalone="' + this.standalone + '"';
+      }
+      r += '?>';
+      if (pretty) {
+        r += newline;
+      }
+      return r;
+    };
+
+    return XMLDeclaration;
+
+  })(XMLNode);
+
+}).call(this);
+
+},{"./XMLNode":9,"underscore":15}],7:[function(require,module,exports){
+// Generated by CoffeeScript 1.6.1
+(function() {
+  var XMLDocType, XMLNode, _,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  _ = require('underscore');
+
+  XMLNode = require('./XMLNode');
+
+  module.exports = XMLDocType = (function(_super) {
+
+    __extends(XMLDocType, _super);
+
+    function XMLDocType(parent, options) {
+      XMLDocType.__super__.constructor.call(this, parent);
+      if (options.ext != null) {
+        this.ext = this.stringify.xmlExternalSubset(options.ext);
+      }
+    }
+
+    XMLDocType.prototype.toString = function(options, level) {
+      var indent, newline, pretty, r, space;
+      pretty = (options != null ? options.pretty : void 0) || false;
+      indent = (options != null ? options.indent : void 0) || '  ';
+      newline = (options != null ? options.newline : void 0) || '\n';
+      level || (level = 0);
+      space = new Array(level + 1).join(indent);
+      r = '';
+      if (pretty) {
+        r += space;
+      }
+      r += '<!DOCTYPE';
+      r += ' ' + this.parent.root().name;
+      if (this.ext != null) {
+        r += ' ' + this.ext;
+      }
+      r += '>';
+      if (pretty) {
+        r += newline;
+      }
+      return r;
+    };
+
+    return XMLDocType;
+
+  })(XMLNode);
+
+}).call(this);
+
+},{"./XMLNode":9,"underscore":15}],8:[function(require,module,exports){
+// Generated by CoffeeScript 1.6.1
+(function() {
+  var XMLAttribute, XMLElement, XMLNode, XMLProcessingInstruction, _,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  _ = require('underscore');
+
+  XMLNode = require('./XMLNode');
+
+  XMLAttribute = require('./XMLAttribute');
+
+  XMLProcessingInstruction = require('./XMLProcessingInstruction');
+
+  module.exports = XMLElement = (function(_super) {
+
+    __extends(XMLElement, _super);
+
+    function XMLElement(parent, name, attributes) {
+      var attName, attValue;
+      XMLElement.__super__.constructor.call(this, parent);
+      if (name == null) {
+        throw new Error("Missing element name");
+      }
+      this.name = this.stringify.eleName(name);
+      if (attributes == null) {
+        attributes = {};
+      }
+      this.children = [];
+      this.instructions = [];
+      this.attributes = {};
+      for (attName in attributes) {
+        if (!__hasProp.call(attributes, attName)) continue;
+        attValue = attributes[attName];
+        if ((attName != null) && (attValue != null)) {
+          this.attributes[attName] = new XMLAttribute(this, attName, attValue);
+        }
+      }
+    }
+
+    XMLElement.prototype.clone = function(deep) {
+      var clonedSelf;
+      clonedSelf = new XMLElement(this.parent, this.name, this.attributes, this.value);
+      if (deep) {
+        this.children.forEach(function(child) {
+          var clonedChild;
+          clonedChild = child.clone(deep);
+          clonedChild.parent = clonedSelf;
+          return clonedSelf.children.push(clonedChild);
+        });
+      }
+      return clonedSelf;
+    };
+
+    XMLElement.prototype.attribute = function(name, value) {
+      var _ref;
+      if (name == null) {
+        throw new Error("Missing attribute name");
+      }
+      if (value == null) {
+        throw new Error("Missing attribute value");
+      }
+      if ((_ref = this.attributes) == null) {
+        this.attributes = {};
+      }
+      this.attributes[name] = new XMLAttribute(this, name, value);
+      return this;
+    };
+
+    XMLElement.prototype.removeAttribute = function(name) {
+      if (name == null) {
+        throw new Error("Missing attribute name");
+      }
+      delete this.attributes[name];
+      return this;
+    };
+
+    XMLElement.prototype.instruction = function(target, value) {
+      var instruction;
+      instruction = new XMLProcessingInstruction(this, target, value);
+      this.instructions.push(instruction);
+      return this;
+    };
+
+    XMLElement.prototype.toString = function(options, level) {
+      var att, child, indent, instruction, name, newline, pretty, r, space, _i, _j, _len, _len1, _ref, _ref1, _ref2;
+      pretty = (options != null ? options.pretty : void 0) || false;
+      indent = (options != null ? options.indent : void 0) || '  ';
+      newline = (options != null ? options.newline : void 0) || '\n';
+      level || (level = 0);
+      space = new Array(level + 1).join(indent);
+      r = '';
+      _ref = this.instructions;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        instruction = _ref[_i];
+        r += instruction.toString(options, level + 1);
+      }
+      if (pretty) {
+        r += space;
+      }
+      r += '<' + this.name;
+      _ref1 = this.attributes;
+      for (name in _ref1) {
+        if (!__hasProp.call(_ref1, name)) continue;
+        att = _ref1[name];
+        r += att.toString(options);
+      }
+      if (this.children.length === 0) {
+        r += '/>';
+        if (pretty) {
+          r += newline;
+        }
+      } else if (pretty && this.children.length === 1 && (this.children[0].value != null)) {
+        r += '>';
+        r += this.children[0].value;
+        r += '</' + this.name + '>';
+        r += newline;
+      } else {
+        r += '>';
+        if (pretty) {
+          r += newline;
+        }
+        _ref2 = this.children;
+        for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
+          child = _ref2[_j];
+          r += child.toString(options, level + 1);
+        }
+        if (pretty) {
+          r += space;
+        }
+        r += '</' + this.name + '>';
+        if (pretty) {
+          r += newline;
+        }
+      }
+      return r;
+    };
+
+    XMLElement.prototype.att = function(name, value) {
+      return this.attribute(name, value);
+    };
+
+    XMLElement.prototype.ins = function(target, value) {
+      return this.instruction(target, value);
+    };
+
+    XMLElement.prototype.a = function(name, value) {
+      return this.attribute(name, value);
+    };
+
+    XMLElement.prototype.i = function(target, value) {
+      return this.instruction(target, value);
+    };
+
+    return XMLElement;
+
+  })(XMLNode);
+
+}).call(this);
+
+},{"./XMLAttribute":2,"./XMLNode":9,"./XMLProcessingInstruction":10,"underscore":15}],9:[function(require,module,exports){
+// Generated by CoffeeScript 1.6.1
+(function() {
+  var XMLNode, _,
+    __hasProp = {}.hasOwnProperty;
+
+  _ = require('underscore');
+
+  module.exports = XMLNode = (function() {
+
+    function XMLNode(parent) {
+      this.parent = parent;
+      this.stringify = this.parent.stringify;
+    }
+
+    XMLNode.prototype.element = function(name, attributes, text) {
+      var attKey, attVal, item, key, lastChild, piKey, piVal, val, _i, _len, _ref;
+      lastChild = null;
+      if (attributes == null) {
+        attributes = {};
+      }
+      if (!_.isObject(attributes)) {
+        _ref = [attributes, text], text = _ref[0], attributes = _ref[1];
+      }
+      if (_.isArray(name)) {
+        for (_i = 0, _len = name.length; _i < _len; _i++) {
+          item = name[_i];
+          lastChild = this.element(item);
+        }
+      } else if (_.isFunction(name)) {
+        name = name.apply();
+        lastChild = this.element(name);
+      } else if (_.isObject(name)) {
+        for (key in name) {
+          if (!__hasProp.call(name, key)) continue;
+          val = name[key];
+          if (_.isFunction(val)) {
+            name[key] = val.apply();
+          }
+        }
+        for (key in name) {
+          if (!__hasProp.call(name, key)) continue;
+          val = name[key];
+          if (val == null) {
+            delete name[key];
+          }
+        }
+        for (attKey in name) {
+          if (!__hasProp.call(name, attKey)) continue;
+          attVal = name[attKey];
+          if (this.stringify.convertAttKey && attKey.indexOf(this.stringify.convertAttKey) === 0) {
+            this.attribute(attKey.substr(this.stringify.convertAttKey.length), attVal);
+            delete name[attKey];
+          }
+        }
+        for (piKey in name) {
+          if (!__hasProp.call(name, piKey)) continue;
+          piVal = name[piKey];
+          if (this.stringify.convertPIKey && piKey.indexOf(this.stringify.convertPIKey) === 0) {
+            this.instruction(piKey.substr(this.stringify.convertPIKey.length), piVal);
+            delete name[piKey];
+          }
+        }
+        for (key in name) {
+          if (!__hasProp.call(name, key)) continue;
+          val = name[key];
+          if (_.isObject(val)) {
+            if (this.stringify.convertListKey && key.indexOf(this.stringify.convertListKey) === 0 && _.isArray(val)) {
+              lastChild = this.element(val);
+            } else {
+              lastChild = this.element(key);
+              lastChild.element(val);
+            }
+          } else {
+            lastChild = this.element(key, val);
+          }
+        }
+      } else {
+        name = '' + name;
+        if (this.stringify.convertTextKey && name.indexOf(this.stringify.convertTextKey) === 0) {
+          lastChild = this.text(text);
+        } else if (this.stringify.convertCDataKey && name.indexOf(this.stringify.convertCDataKey) === 0) {
+          lastChild = this.cdata(text);
+        } else if (this.stringify.convertCommentKey && name.indexOf(this.stringify.convertCommentKey) === 0) {
+          lastChild = this.comment(text);
+        } else if (this.stringify.convertRawKey && name.indexOf(this.stringify.convertRawKey) === 0) {
+          lastChild = this.raw(text);
+        } else {
+          lastChild = this.node(name, attributes, text);
+        }
+      }
+      return lastChild;
+    };
+
+    XMLNode.prototype.insertBefore = function(name, attributes, text) {
+      var child, i, removed;
+      if (this.isRoot) {
+        throw new Error("Cannot insert elements at root level");
+      }
+      i = this.parent.children.indexOf(this);
+      removed = this.parent.children.splice(i);
+      child = this.parent.element(name, attributes, text);
+      Array.prototype.push.apply(this.parent.children, removed);
+      return child;
+    };
+
+    XMLNode.prototype.insertAfter = function(name, attributes, text) {
+      var child, i, removed;
+      if (this.isRoot) {
+        throw new Error("Cannot insert elements at root level");
+      }
+      i = this.parent.children.indexOf(this);
+      removed = this.parent.children.splice(i + 1);
+      child = this.parent.element(name, attributes, text);
+      Array.prototype.push.apply(this.parent.children, removed);
+      return child;
+    };
+
+    XMLNode.prototype.remove = function() {
+      var i, _ref;
+      if (this.isRoot) {
+        throw new Error("Cannot remove the root element");
+      }
+      i = this.parent.children.indexOf(this);
+      [].splice.apply(this.parent.children, [i, i - i + 1].concat(_ref = [])), _ref;
+      return this.parent;
+    };
+
+    XMLNode.prototype.node = function(name, attributes, text) {
+      var XMLElement, child;
+      XMLElement = require('./XMLElement');
+      child = new XMLElement(this, name, attributes);
+      if (text != null) {
+        child.text(text);
+      }
+      this.children.push(child);
+      return child;
+    };
+
+    XMLNode.prototype.text = function(value) {
+      var XMLText, child;
+      XMLText = require('./XMLText');
+      child = new XMLText(this, value);
+      this.children.push(child);
+      return this;
+    };
+
+    XMLNode.prototype.cdata = function(value) {
+      var XMLCData, child;
+      XMLCData = require('./XMLCData');
+      child = new XMLCData(this, value);
+      this.children.push(child);
+      return this;
+    };
+
+    XMLNode.prototype.comment = function(value) {
+      var XMLComment, child;
+      XMLComment = require('./XMLComment');
+      child = new XMLComment(this, value);
+      this.children.push(child);
+      return this;
+    };
+
+    XMLNode.prototype.raw = function(value) {
+      var XMLRaw, child;
+      XMLRaw = require('./XMLRaw');
+      child = new XMLRaw(this, value);
+      this.children.push(child);
+      return this;
+    };
+
+    XMLNode.prototype.up = function() {
+      if (this.isRoot) {
+        throw new Error("The root node has no parent. Use doc() if you need to get the document object.");
+      }
+      return this.parent;
+    };
+
+    XMLNode.prototype.root = function() {
+      var child;
+      if (this.isRoot) {
+        return this;
+      }
+      child = this.parent;
+      while (!child.isRoot) {
+        child = child.parent;
+      }
+      return child;
+    };
+
+    XMLNode.prototype.document = function() {
+      return this.root().documentObject;
+    };
+
+    XMLNode.prototype.end = function(options) {
+      return this.document().toString(options);
+    };
+
+    XMLNode.prototype.prev = function() {
+      var i;
+      if (this.isRoot) {
+        throw new Error("Root node has no siblings");
+      }
+      i = this.parent.children.indexOf(this);
+      if (i < 1) {
+        throw new Error("Already at the first node");
+      }
+      return this.parent.children[i - 1];
+    };
+
+    XMLNode.prototype.next = function() {
+      var i;
+      if (this.isRoot) {
+        throw new Error("Root node has no siblings");
+      }
+      i = this.parent.children.indexOf(this);
+      if (i === -1 || i === this.parent.children.length - 1) {
+        throw new Error("Already at the last node");
+      }
+      return this.parent.children[i + 1];
+    };
+
+    XMLNode.prototype.importXMLBuilder = function(xmlbuilder) {
+      var clonedRoot;
+      clonedRoot = xmlbuilder.root().clone(true);
+      clonedRoot.parent = this;
+      this.children.push(clonedRoot);
+      clonedRoot.isRoot = false;
+      return this;
+    };
+
+    XMLNode.prototype.clone = function(deep) {
+      return _.clone(this);
+    };
+
+    XMLNode.prototype.ele = function(name, attributes, text) {
+      return this.element(name, attributes, text);
+    };
+
+    XMLNode.prototype.nod = function(name, attributes, text) {
+      return this.node(name, attributes, text);
+    };
+
+    XMLNode.prototype.txt = function(value) {
+      return this.text(value);
+    };
+
+    XMLNode.prototype.dat = function(value) {
+      return this.cdata(value);
+    };
+
+    XMLNode.prototype.com = function(value) {
+      return this.comment(value);
+    };
+
+    XMLNode.prototype.doc = function() {
+      return this.document();
+    };
+
+    XMLNode.prototype.e = function(name, attributes, text) {
+      return this.element(name, attributes, text);
+    };
+
+    XMLNode.prototype.n = function(name, attributes, text) {
+      return this.node(name, attributes, text);
+    };
+
+    XMLNode.prototype.t = function(value) {
+      return this.text(value);
+    };
+
+    XMLNode.prototype.d = function(value) {
+      return this.cdata(value);
+    };
+
+    XMLNode.prototype.c = function(value) {
+      return this.comment(value);
+    };
+
+    XMLNode.prototype.r = function(value) {
+      return this.raw(value);
+    };
+
+    XMLNode.prototype.u = function() {
+      return this.up();
+    };
+
+    return XMLNode;
+
+  })();
+
+}).call(this);
+
+},{"./XMLCData":4,"./XMLComment":5,"./XMLElement":8,"./XMLRaw":11,"./XMLText":13,"underscore":15}],10:[function(require,module,exports){
+// Generated by CoffeeScript 1.6.1
+(function() {
+  var XMLProcessingInstruction, _;
+
+  _ = require('underscore');
+
+  module.exports = XMLProcessingInstruction = (function() {
+
+    function XMLProcessingInstruction(parent, target, value) {
+      this.stringify = parent.stringify;
+      if (target == null) {
+        throw new Error("Missing instruction target");
+      }
+      this.target = this.stringify.insTarget(target);
+      this.value = this.stringify.insValue(value);
+    }
+
+    XMLProcessingInstruction.prototype.toString = function(options, level) {
+      var indent, newline, pretty, r, space;
+      pretty = (options != null ? options.pretty : void 0) || false;
+      indent = (options != null ? options.indent : void 0) || '  ';
+      newline = (options != null ? options.newline : void 0) || '\n';
+      level || (level = 0);
+      space = new Array(level).join(indent);
+      r = '';
+      if (pretty) {
+        r += space;
+      }
+      r += '<?';
+      r += this.target;
+      if (this.value) {
+        r += ' ' + this.value;
+      }
+      r += '?>';
+      if (pretty) {
+        r += newline;
+      }
+      return r;
+    };
+
+    return XMLProcessingInstruction;
+
+  })();
+
+}).call(this);
+
+},{"underscore":15}],11:[function(require,module,exports){
+// Generated by CoffeeScript 1.6.1
+(function() {
+  var XMLNode, XMLRaw, _,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  _ = require('underscore');
+
+  XMLNode = require('./XMLNode');
+
+  module.exports = XMLRaw = (function(_super) {
+
+    __extends(XMLRaw, _super);
+
+    function XMLRaw(parent, text) {
+      XMLRaw.__super__.constructor.call(this, parent);
+      if (text == null) {
+        throw new Error("Missing raw text");
+      }
+      this.value = this.stringify.raw(text);
+    }
+
+    XMLRaw.prototype.toString = function(options, level) {
+      var indent, newline, pretty, r, space;
+      pretty = (options != null ? options.pretty : void 0) || false;
+      indent = (options != null ? options.indent : void 0) || '  ';
+      newline = (options != null ? options.newline : void 0) || '\n';
+      level || (level = 0);
+      space = new Array(level + 1).join(indent);
+      r = '';
+      if (pretty) {
+        r += space;
+      }
+      r += this.value;
+      if (pretty) {
+        r += newline;
+      }
+      return r;
+    };
+
+    return XMLRaw;
+
+  })(XMLNode);
+
+}).call(this);
+
+},{"./XMLNode":9,"underscore":15}],12:[function(require,module,exports){
+// Generated by CoffeeScript 1.6.1
+(function() {
+  var XMLStringifier,
+    _this = this,
+    __hasProp = {}.hasOwnProperty;
+
+  module.exports = XMLStringifier = (function() {
+
+    function XMLStringifier(options) {
+      var key, value, _ref,
+        _this = this;
+      this.assertLegalChar = function(str) {
+        return XMLStringifier.prototype.assertLegalChar.apply(_this, arguments);
+      };
+      this.allowSurrogateChars = options != null ? options.allowSurrogateChars : void 0;
+      _ref = (options != null ? options.stringify : void 0) || {};
+      for (key in _ref) {
+        if (!__hasProp.call(_ref, key)) continue;
+        value = _ref[key];
+        this[key] = value;
+      }
+    }
+
+    XMLStringifier.prototype.eleName = function(val) {
+      val = '' + val || '';
+      return this.assertLegalChar(val);
+    };
+
+    XMLStringifier.prototype.eleText = function(val) {
+      val = '' + val || '';
+      return this.assertLegalChar(this.escape(val));
+    };
+
+    XMLStringifier.prototype.cdata = function(val) {
+      val = '' + val || '';
+      if (val.match(/]]>/)) {
+        throw new Error("Invalid CDATA text: " + val);
+      }
+      return this.assertLegalChar(val);
+    };
+
+    XMLStringifier.prototype.comment = function(val) {
+      val = '' + val || '';
+      if (val.match(/--/)) {
+        throw new Error("Comment text cannot contain double-hypen: " + val);
+      }
+      return this.assertLegalChar(this.escape(val));
+    };
+
+    XMLStringifier.prototype.raw = function(val) {
+      return '' + val || '';
+    };
+
+    XMLStringifier.prototype.attName = function(val) {
+      return '' + val || '';
+    };
+
+    XMLStringifier.prototype.attValue = function(val) {
+      val = '' + val || '';
+      return this.escape(val);
+    };
+
+    XMLStringifier.prototype.insTarget = function(val) {
+      return '' + val || '';
+    };
+
+    XMLStringifier.prototype.insValue = function(val) {
+      val = '' + val || '';
+      if (val.match(/\?>/)) {
+        throw new Error("Invalid processing instruction value: " + val);
+      }
+      return val;
+    };
+
+    XMLStringifier.prototype.xmlVersion = function(val) {
+      val = '' + val || '';
+      if (!val.match(/1\.[0-9]+/)) {
+        throw new Error("Invalid version number: " + val);
+      }
+      return val;
+    };
+
+    XMLStringifier.prototype.xmlEncoding = function(val) {
+      val = '' + val || '';
+      if (!val.match(/[A-Za-z](?:[A-Za-z0-9._-]|-)*/)) {
+        throw new Error("Invalid encoding: " + options.val);
+      }
+      return val;
+    };
+
+    XMLStringifier.prototype.xmlStandalone = function(val) {
+      if (val) {
+        return "yes";
+      } else {
+        return "no";
+      }
+    };
+
+    XMLStringifier.prototype.xmlExternalSubset = function(val) {
+      return '' + val || '';
+    };
+
+    XMLStringifier.prototype.convertAttKey = '@';
+
+    XMLStringifier.prototype.convertPIKey = '?';
+
+    XMLStringifier.prototype.convertTextKey = '#text';
+
+    XMLStringifier.prototype.convertCDataKey = '#cdata';
+
+    XMLStringifier.prototype.convertCommentKey = '#comment';
+
+    XMLStringifier.prototype.convertRawKey = '#raw';
+
+    XMLStringifier.prototype.convertListKey = '#list';
+
+    XMLStringifier.prototype.assertLegalChar = function(str) {
+      var chars, chr;
+      if (this.allowSurrogateChars) {
+        chars = /[\u0000-\u0008\u000B-\u000C\u000E-\u001F\uFFFE-\uFFFF]/;
+      } else {
+        chars = /[\u0000-\u0008\u000B-\u000C\u000E-\u001F\uD800-\uDFFF\uFFFE-\uFFFF]/;
+      }
+      chr = str.match(chars);
+      if (chr) {
+        throw new Error("Invalid character (" + chr + ") in string: " + str + " at index " + chr.index);
+      }
+      return str;
+    };
+
+    XMLStringifier.prototype.escape = function(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/'/g, '&apos;').replace(/"/g, '&quot;');
+    };
+
+    return XMLStringifier;
+
+  })();
+
+}).call(this);
+
+},{}],13:[function(require,module,exports){
+// Generated by CoffeeScript 1.6.1
+(function() {
+  var XMLNode, XMLText, _,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  _ = require('underscore');
+
+  XMLNode = require('./XMLNode');
+
+  module.exports = XMLText = (function(_super) {
+
+    __extends(XMLText, _super);
+
+    function XMLText(parent, text) {
+      this.parent = parent;
+      XMLText.__super__.constructor.call(this, parent);
+      if (text == null) {
+        throw new Error("Missing element text");
+      }
+      this.value = this.stringify.eleText(text);
+    }
+
+    XMLText.prototype.toString = function(options, level) {
+      var indent, newline, pretty, r, space;
+      pretty = (options != null ? options.pretty : void 0) || false;
+      indent = (options != null ? options.indent : void 0) || '  ';
+      newline = (options != null ? options.newline : void 0) || '\n';
+      level || (level = 0);
+      space = new Array(level + 1).join(indent);
+      r = '';
+      if (pretty) {
+        r += space;
+      }
+      r += this.value;
+      if (pretty) {
+        r += newline;
+      }
+      return r;
+    };
+
+    return XMLText;
+
+  })(XMLNode);
+
+}).call(this);
+
+},{"./XMLNode":9,"underscore":15}],14:[function(require,module,exports){
+// Generated by CoffeeScript 1.6.1
+(function() {
+  var XMLBuilder, _;
+
+  _ = require('underscore');
+
+  XMLBuilder = require('./XMLBuilder');
+
+  module.exports.create = function(name, xmldec, doctype, options) {
+    options = _.extend({}, xmldec, doctype, options);
+    return new XMLBuilder(name, options).root();
   };
-};
 
-Palette.prototype.to_css = function (colour) {
-  return `hsl(${colour.h}deg ${colour.s}% ${colour.l}%)`;
-};
+}).call(this);
 
-module.exports = Palette;
+},{"./XMLBuilder":3,"underscore":15}],15:[function(require,module,exports){
+//     Underscore.js 1.5.2
+//     http://underscorejs.org
+//     (c) 2009-2013 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+//     Underscore may be freely distributed under the MIT license.
 
-},{}],4:[function(require,module,exports){
+(function() {
+
+  // Baseline setup
+  // --------------
+
+  // Establish the root object, `window` in the browser, or `exports` on the server.
+  var root = this;
+
+  // Save the previous value of the `_` variable.
+  var previousUnderscore = root._;
+
+  // Establish the object that gets returned to break out of a loop iteration.
+  var breaker = {};
+
+  // Save bytes in the minified (but not gzipped) version:
+  var ArrayProto = Array.prototype, ObjProto = Object.prototype, FuncProto = Function.prototype;
+
+  // Create quick reference variables for speed access to core prototypes.
+  var
+    push             = ArrayProto.push,
+    slice            = ArrayProto.slice,
+    concat           = ArrayProto.concat,
+    toString         = ObjProto.toString,
+    hasOwnProperty   = ObjProto.hasOwnProperty;
+
+  // All **ECMAScript 5** native function implementations that we hope to use
+  // are declared here.
+  var
+    nativeForEach      = ArrayProto.forEach,
+    nativeMap          = ArrayProto.map,
+    nativeReduce       = ArrayProto.reduce,
+    nativeReduceRight  = ArrayProto.reduceRight,
+    nativeFilter       = ArrayProto.filter,
+    nativeEvery        = ArrayProto.every,
+    nativeSome         = ArrayProto.some,
+    nativeIndexOf      = ArrayProto.indexOf,
+    nativeLastIndexOf  = ArrayProto.lastIndexOf,
+    nativeIsArray      = Array.isArray,
+    nativeKeys         = Object.keys,
+    nativeBind         = FuncProto.bind;
+
+  // Create a safe reference to the Underscore object for use below.
+  var _ = function(obj) {
+    if (obj instanceof _) return obj;
+    if (!(this instanceof _)) return new _(obj);
+    this._wrapped = obj;
+  };
+
+  // Export the Underscore object for **Node.js**, with
+  // backwards-compatibility for the old `require()` API. If we're in
+  // the browser, add `_` as a global object via a string identifier,
+  // for Closure Compiler "advanced" mode.
+  if (typeof exports !== 'undefined') {
+    if (typeof module !== 'undefined' && module.exports) {
+      exports = module.exports = _;
+    }
+    exports._ = _;
+  } else {
+    root._ = _;
+  }
+
+  // Current version.
+  _.VERSION = '1.5.2';
+
+  // Collection Functions
+  // --------------------
+
+  // The cornerstone, an `each` implementation, aka `forEach`.
+  // Handles objects with the built-in `forEach`, arrays, and raw objects.
+  // Delegates to **ECMAScript 5**'s native `forEach` if available.
+  var each = _.each = _.forEach = function(obj, iterator, context) {
+    if (obj == null) return;
+    if (nativeForEach && obj.forEach === nativeForEach) {
+      obj.forEach(iterator, context);
+    } else if (obj.length === +obj.length) {
+      for (var i = 0, length = obj.length; i < length; i++) {
+        if (iterator.call(context, obj[i], i, obj) === breaker) return;
+      }
+    } else {
+      var keys = _.keys(obj);
+      for (var i = 0, length = keys.length; i < length; i++) {
+        if (iterator.call(context, obj[keys[i]], keys[i], obj) === breaker) return;
+      }
+    }
+  };
+
+  // Return the results of applying the iterator to each element.
+  // Delegates to **ECMAScript 5**'s native `map` if available.
+  _.map = _.collect = function(obj, iterator, context) {
+    var results = [];
+    if (obj == null) return results;
+    if (nativeMap && obj.map === nativeMap) return obj.map(iterator, context);
+    each(obj, function(value, index, list) {
+      results.push(iterator.call(context, value, index, list));
+    });
+    return results;
+  };
+
+  var reduceError = 'Reduce of empty array with no initial value';
+
+  // **Reduce** builds up a single result from a list of values, aka `inject`,
+  // or `foldl`. Delegates to **ECMAScript 5**'s native `reduce` if available.
+  _.reduce = _.foldl = _.inject = function(obj, iterator, memo, context) {
+    var initial = arguments.length > 2;
+    if (obj == null) obj = [];
+    if (nativeReduce && obj.reduce === nativeReduce) {
+      if (context) iterator = _.bind(iterator, context);
+      return initial ? obj.reduce(iterator, memo) : obj.reduce(iterator);
+    }
+    each(obj, function(value, index, list) {
+      if (!initial) {
+        memo = value;
+        initial = true;
+      } else {
+        memo = iterator.call(context, memo, value, index, list);
+      }
+    });
+    if (!initial) throw new TypeError(reduceError);
+    return memo;
+  };
+
+  // The right-associative version of reduce, also known as `foldr`.
+  // Delegates to **ECMAScript 5**'s native `reduceRight` if available.
+  _.reduceRight = _.foldr = function(obj, iterator, memo, context) {
+    var initial = arguments.length > 2;
+    if (obj == null) obj = [];
+    if (nativeReduceRight && obj.reduceRight === nativeReduceRight) {
+      if (context) iterator = _.bind(iterator, context);
+      return initial ? obj.reduceRight(iterator, memo) : obj.reduceRight(iterator);
+    }
+    var length = obj.length;
+    if (length !== +length) {
+      var keys = _.keys(obj);
+      length = keys.length;
+    }
+    each(obj, function(value, index, list) {
+      index = keys ? keys[--length] : --length;
+      if (!initial) {
+        memo = obj[index];
+        initial = true;
+      } else {
+        memo = iterator.call(context, memo, obj[index], index, list);
+      }
+    });
+    if (!initial) throw new TypeError(reduceError);
+    return memo;
+  };
+
+  // Return the first value which passes a truth test. Aliased as `detect`.
+  _.find = _.detect = function(obj, iterator, context) {
+    var result;
+    any(obj, function(value, index, list) {
+      if (iterator.call(context, value, index, list)) {
+        result = value;
+        return true;
+      }
+    });
+    return result;
+  };
+
+  // Return all the elements that pass a truth test.
+  // Delegates to **ECMAScript 5**'s native `filter` if available.
+  // Aliased as `select`.
+  _.filter = _.select = function(obj, iterator, context) {
+    var results = [];
+    if (obj == null) return results;
+    if (nativeFilter && obj.filter === nativeFilter) return obj.filter(iterator, context);
+    each(obj, function(value, index, list) {
+      if (iterator.call(context, value, index, list)) results.push(value);
+    });
+    return results;
+  };
+
+  // Return all the elements for which a truth test fails.
+  _.reject = function(obj, iterator, context) {
+    return _.filter(obj, function(value, index, list) {
+      return !iterator.call(context, value, index, list);
+    }, context);
+  };
+
+  // Determine whether all of the elements match a truth test.
+  // Delegates to **ECMAScript 5**'s native `every` if available.
+  // Aliased as `all`.
+  _.every = _.all = function(obj, iterator, context) {
+    iterator || (iterator = _.identity);
+    var result = true;
+    if (obj == null) return result;
+    if (nativeEvery && obj.every === nativeEvery) return obj.every(iterator, context);
+    each(obj, function(value, index, list) {
+      if (!(result = result && iterator.call(context, value, index, list))) return breaker;
+    });
+    return !!result;
+  };
+
+  // Determine if at least one element in the object matches a truth test.
+  // Delegates to **ECMAScript 5**'s native `some` if available.
+  // Aliased as `any`.
+  var any = _.some = _.any = function(obj, iterator, context) {
+    iterator || (iterator = _.identity);
+    var result = false;
+    if (obj == null) return result;
+    if (nativeSome && obj.some === nativeSome) return obj.some(iterator, context);
+    each(obj, function(value, index, list) {
+      if (result || (result = iterator.call(context, value, index, list))) return breaker;
+    });
+    return !!result;
+  };
+
+  // Determine if the array or object contains a given value (using `===`).
+  // Aliased as `include`.
+  _.contains = _.include = function(obj, target) {
+    if (obj == null) return false;
+    if (nativeIndexOf && obj.indexOf === nativeIndexOf) return obj.indexOf(target) != -1;
+    return any(obj, function(value) {
+      return value === target;
+    });
+  };
+
+  // Invoke a method (with arguments) on every item in a collection.
+  _.invoke = function(obj, method) {
+    var args = slice.call(arguments, 2);
+    var isFunc = _.isFunction(method);
+    return _.map(obj, function(value) {
+      return (isFunc ? method : value[method]).apply(value, args);
+    });
+  };
+
+  // Convenience version of a common use case of `map`: fetching a property.
+  _.pluck = function(obj, key) {
+    return _.map(obj, function(value){ return value[key]; });
+  };
+
+  // Convenience version of a common use case of `filter`: selecting only objects
+  // containing specific `key:value` pairs.
+  _.where = function(obj, attrs, first) {
+    if (_.isEmpty(attrs)) return first ? void 0 : [];
+    return _[first ? 'find' : 'filter'](obj, function(value) {
+      for (var key in attrs) {
+        if (attrs[key] !== value[key]) return false;
+      }
+      return true;
+    });
+  };
+
+  // Convenience version of a common use case of `find`: getting the first object
+  // containing specific `key:value` pairs.
+  _.findWhere = function(obj, attrs) {
+    return _.where(obj, attrs, true);
+  };
+
+  // Return the maximum element or (element-based computation).
+  // Can't optimize arrays of integers longer than 65,535 elements.
+  // See [WebKit Bug 80797](https://bugs.webkit.org/show_bug.cgi?id=80797)
+  _.max = function(obj, iterator, context) {
+    if (!iterator && _.isArray(obj) && obj[0] === +obj[0] && obj.length < 65535) {
+      return Math.max.apply(Math, obj);
+    }
+    if (!iterator && _.isEmpty(obj)) return -Infinity;
+    var result = {computed : -Infinity, value: -Infinity};
+    each(obj, function(value, index, list) {
+      var computed = iterator ? iterator.call(context, value, index, list) : value;
+      computed > result.computed && (result = {value : value, computed : computed});
+    });
+    return result.value;
+  };
+
+  // Return the minimum element (or element-based computation).
+  _.min = function(obj, iterator, context) {
+    if (!iterator && _.isArray(obj) && obj[0] === +obj[0] && obj.length < 65535) {
+      return Math.min.apply(Math, obj);
+    }
+    if (!iterator && _.isEmpty(obj)) return Infinity;
+    var result = {computed : Infinity, value: Infinity};
+    each(obj, function(value, index, list) {
+      var computed = iterator ? iterator.call(context, value, index, list) : value;
+      computed < result.computed && (result = {value : value, computed : computed});
+    });
+    return result.value;
+  };
+
+  // Shuffle an array, using the modern version of the 
+  // [Fisher-Yates shuffle](http://en.wikipedia.org/wiki/Fisher–Yates_shuffle).
+  _.shuffle = function(obj) {
+    var rand;
+    var index = 0;
+    var shuffled = [];
+    each(obj, function(value) {
+      rand = _.random(index++);
+      shuffled[index - 1] = shuffled[rand];
+      shuffled[rand] = value;
+    });
+    return shuffled;
+  };
+
+  // Sample **n** random values from an array.
+  // If **n** is not specified, returns a single random element from the array.
+  // The internal `guard` argument allows it to work with `map`.
+  _.sample = function(obj, n, guard) {
+    if (arguments.length < 2 || guard) {
+      return obj[_.random(obj.length - 1)];
+    }
+    return _.shuffle(obj).slice(0, Math.max(0, n));
+  };
+
+  // An internal function to generate lookup iterators.
+  var lookupIterator = function(value) {
+    return _.isFunction(value) ? value : function(obj){ return obj[value]; };
+  };
+
+  // Sort the object's values by a criterion produced by an iterator.
+  _.sortBy = function(obj, value, context) {
+    var iterator = lookupIterator(value);
+    return _.pluck(_.map(obj, function(value, index, list) {
+      return {
+        value: value,
+        index: index,
+        criteria: iterator.call(context, value, index, list)
+      };
+    }).sort(function(left, right) {
+      var a = left.criteria;
+      var b = right.criteria;
+      if (a !== b) {
+        if (a > b || a === void 0) return 1;
+        if (a < b || b === void 0) return -1;
+      }
+      return left.index - right.index;
+    }), 'value');
+  };
+
+  // An internal function used for aggregate "group by" operations.
+  var group = function(behavior) {
+    return function(obj, value, context) {
+      var result = {};
+      var iterator = value == null ? _.identity : lookupIterator(value);
+      each(obj, function(value, index) {
+        var key = iterator.call(context, value, index, obj);
+        behavior(result, key, value);
+      });
+      return result;
+    };
+  };
+
+  // Groups the object's values by a criterion. Pass either a string attribute
+  // to group by, or a function that returns the criterion.
+  _.groupBy = group(function(result, key, value) {
+    (_.has(result, key) ? result[key] : (result[key] = [])).push(value);
+  });
+
+  // Indexes the object's values by a criterion, similar to `groupBy`, but for
+  // when you know that your index values will be unique.
+  _.indexBy = group(function(result, key, value) {
+    result[key] = value;
+  });
+
+  // Counts instances of an object that group by a certain criterion. Pass
+  // either a string attribute to count by, or a function that returns the
+  // criterion.
+  _.countBy = group(function(result, key) {
+    _.has(result, key) ? result[key]++ : result[key] = 1;
+  });
+
+  // Use a comparator function to figure out the smallest index at which
+  // an object should be inserted so as to maintain order. Uses binary search.
+  _.sortedIndex = function(array, obj, iterator, context) {
+    iterator = iterator == null ? _.identity : lookupIterator(iterator);
+    var value = iterator.call(context, obj);
+    var low = 0, high = array.length;
+    while (low < high) {
+      var mid = (low + high) >>> 1;
+      iterator.call(context, array[mid]) < value ? low = mid + 1 : high = mid;
+    }
+    return low;
+  };
+
+  // Safely create a real, live array from anything iterable.
+  _.toArray = function(obj) {
+    if (!obj) return [];
+    if (_.isArray(obj)) return slice.call(obj);
+    if (obj.length === +obj.length) return _.map(obj, _.identity);
+    return _.values(obj);
+  };
+
+  // Return the number of elements in an object.
+  _.size = function(obj) {
+    if (obj == null) return 0;
+    return (obj.length === +obj.length) ? obj.length : _.keys(obj).length;
+  };
+
+  // Array Functions
+  // ---------------
+
+  // Get the first element of an array. Passing **n** will return the first N
+  // values in the array. Aliased as `head` and `take`. The **guard** check
+  // allows it to work with `_.map`.
+  _.first = _.head = _.take = function(array, n, guard) {
+    if (array == null) return void 0;
+    return (n == null) || guard ? array[0] : slice.call(array, 0, n);
+  };
+
+  // Returns everything but the last entry of the array. Especially useful on
+  // the arguments object. Passing **n** will return all the values in
+  // the array, excluding the last N. The **guard** check allows it to work with
+  // `_.map`.
+  _.initial = function(array, n, guard) {
+    return slice.call(array, 0, array.length - ((n == null) || guard ? 1 : n));
+  };
+
+  // Get the last element of an array. Passing **n** will return the last N
+  // values in the array. The **guard** check allows it to work with `_.map`.
+  _.last = function(array, n, guard) {
+    if (array == null) return void 0;
+    if ((n == null) || guard) {
+      return array[array.length - 1];
+    } else {
+      return slice.call(array, Math.max(array.length - n, 0));
+    }
+  };
+
+  // Returns everything but the first entry of the array. Aliased as `tail` and `drop`.
+  // Especially useful on the arguments object. Passing an **n** will return
+  // the rest N values in the array. The **guard**
+  // check allows it to work with `_.map`.
+  _.rest = _.tail = _.drop = function(array, n, guard) {
+    return slice.call(array, (n == null) || guard ? 1 : n);
+  };
+
+  // Trim out all falsy values from an array.
+  _.compact = function(array) {
+    return _.filter(array, _.identity);
+  };
+
+  // Internal implementation of a recursive `flatten` function.
+  var flatten = function(input, shallow, output) {
+    if (shallow && _.every(input, _.isArray)) {
+      return concat.apply(output, input);
+    }
+    each(input, function(value) {
+      if (_.isArray(value) || _.isArguments(value)) {
+        shallow ? push.apply(output, value) : flatten(value, shallow, output);
+      } else {
+        output.push(value);
+      }
+    });
+    return output;
+  };
+
+  // Flatten out an array, either recursively (by default), or just one level.
+  _.flatten = function(array, shallow) {
+    return flatten(array, shallow, []);
+  };
+
+  // Return a version of the array that does not contain the specified value(s).
+  _.without = function(array) {
+    return _.difference(array, slice.call(arguments, 1));
+  };
+
+  // Produce a duplicate-free version of the array. If the array has already
+  // been sorted, you have the option of using a faster algorithm.
+  // Aliased as `unique`.
+  _.uniq = _.unique = function(array, isSorted, iterator, context) {
+    if (_.isFunction(isSorted)) {
+      context = iterator;
+      iterator = isSorted;
+      isSorted = false;
+    }
+    var initial = iterator ? _.map(array, iterator, context) : array;
+    var results = [];
+    var seen = [];
+    each(initial, function(value, index) {
+      if (isSorted ? (!index || seen[seen.length - 1] !== value) : !_.contains(seen, value)) {
+        seen.push(value);
+        results.push(array[index]);
+      }
+    });
+    return results;
+  };
+
+  // Produce an array that contains the union: each distinct element from all of
+  // the passed-in arrays.
+  _.union = function() {
+    return _.uniq(_.flatten(arguments, true));
+  };
+
+  // Produce an array that contains every item shared between all the
+  // passed-in arrays.
+  _.intersection = function(array) {
+    var rest = slice.call(arguments, 1);
+    return _.filter(_.uniq(array), function(item) {
+      return _.every(rest, function(other) {
+        return _.indexOf(other, item) >= 0;
+      });
+    });
+  };
+
+  // Take the difference between one array and a number of other arrays.
+  // Only the elements present in just the first array will remain.
+  _.difference = function(array) {
+    var rest = concat.apply(ArrayProto, slice.call(arguments, 1));
+    return _.filter(array, function(value){ return !_.contains(rest, value); });
+  };
+
+  // Zip together multiple lists into a single array -- elements that share
+  // an index go together.
+  _.zip = function() {
+    var length = _.max(_.pluck(arguments, "length").concat(0));
+    var results = new Array(length);
+    for (var i = 0; i < length; i++) {
+      results[i] = _.pluck(arguments, '' + i);
+    }
+    return results;
+  };
+
+  // Converts lists into objects. Pass either a single array of `[key, value]`
+  // pairs, or two parallel arrays of the same length -- one of keys, and one of
+  // the corresponding values.
+  _.object = function(list, values) {
+    if (list == null) return {};
+    var result = {};
+    for (var i = 0, length = list.length; i < length; i++) {
+      if (values) {
+        result[list[i]] = values[i];
+      } else {
+        result[list[i][0]] = list[i][1];
+      }
+    }
+    return result;
+  };
+
+  // If the browser doesn't supply us with indexOf (I'm looking at you, **MSIE**),
+  // we need this function. Return the position of the first occurrence of an
+  // item in an array, or -1 if the item is not included in the array.
+  // Delegates to **ECMAScript 5**'s native `indexOf` if available.
+  // If the array is large and already in sort order, pass `true`
+  // for **isSorted** to use binary search.
+  _.indexOf = function(array, item, isSorted) {
+    if (array == null) return -1;
+    var i = 0, length = array.length;
+    if (isSorted) {
+      if (typeof isSorted == 'number') {
+        i = (isSorted < 0 ? Math.max(0, length + isSorted) : isSorted);
+      } else {
+        i = _.sortedIndex(array, item);
+        return array[i] === item ? i : -1;
+      }
+    }
+    if (nativeIndexOf && array.indexOf === nativeIndexOf) return array.indexOf(item, isSorted);
+    for (; i < length; i++) if (array[i] === item) return i;
+    return -1;
+  };
+
+  // Delegates to **ECMAScript 5**'s native `lastIndexOf` if available.
+  _.lastIndexOf = function(array, item, from) {
+    if (array == null) return -1;
+    var hasIndex = from != null;
+    if (nativeLastIndexOf && array.lastIndexOf === nativeLastIndexOf) {
+      return hasIndex ? array.lastIndexOf(item, from) : array.lastIndexOf(item);
+    }
+    var i = (hasIndex ? from : array.length);
+    while (i--) if (array[i] === item) return i;
+    return -1;
+  };
+
+  // Generate an integer Array containing an arithmetic progression. A port of
+  // the native Python `range()` function. See
+  // [the Python documentation](http://docs.python.org/library/functions.html#range).
+  _.range = function(start, stop, step) {
+    if (arguments.length <= 1) {
+      stop = start || 0;
+      start = 0;
+    }
+    step = arguments[2] || 1;
+
+    var length = Math.max(Math.ceil((stop - start) / step), 0);
+    var idx = 0;
+    var range = new Array(length);
+
+    while(idx < length) {
+      range[idx++] = start;
+      start += step;
+    }
+
+    return range;
+  };
+
+  // Function (ahem) Functions
+  // ------------------
+
+  // Reusable constructor function for prototype setting.
+  var ctor = function(){};
+
+  // Create a function bound to a given object (assigning `this`, and arguments,
+  // optionally). Delegates to **ECMAScript 5**'s native `Function.bind` if
+  // available.
+  _.bind = function(func, context) {
+    var args, bound;
+    if (nativeBind && func.bind === nativeBind) return nativeBind.apply(func, slice.call(arguments, 1));
+    if (!_.isFunction(func)) throw new TypeError;
+    args = slice.call(arguments, 2);
+    return bound = function() {
+      if (!(this instanceof bound)) return func.apply(context, args.concat(slice.call(arguments)));
+      ctor.prototype = func.prototype;
+      var self = new ctor;
+      ctor.prototype = null;
+      var result = func.apply(self, args.concat(slice.call(arguments)));
+      if (Object(result) === result) return result;
+      return self;
+    };
+  };
+
+  // Partially apply a function by creating a version that has had some of its
+  // arguments pre-filled, without changing its dynamic `this` context.
+  _.partial = function(func) {
+    var args = slice.call(arguments, 1);
+    return function() {
+      return func.apply(this, args.concat(slice.call(arguments)));
+    };
+  };
+
+  // Bind all of an object's methods to that object. Useful for ensuring that
+  // all callbacks defined on an object belong to it.
+  _.bindAll = function(obj) {
+    var funcs = slice.call(arguments, 1);
+    if (funcs.length === 0) throw new Error("bindAll must be passed function names");
+    each(funcs, function(f) { obj[f] = _.bind(obj[f], obj); });
+    return obj;
+  };
+
+  // Memoize an expensive function by storing its results.
+  _.memoize = function(func, hasher) {
+    var memo = {};
+    hasher || (hasher = _.identity);
+    return function() {
+      var key = hasher.apply(this, arguments);
+      return _.has(memo, key) ? memo[key] : (memo[key] = func.apply(this, arguments));
+    };
+  };
+
+  // Delays a function for the given number of milliseconds, and then calls
+  // it with the arguments supplied.
+  _.delay = function(func, wait) {
+    var args = slice.call(arguments, 2);
+    return setTimeout(function(){ return func.apply(null, args); }, wait);
+  };
+
+  // Defers a function, scheduling it to run after the current call stack has
+  // cleared.
+  _.defer = function(func) {
+    return _.delay.apply(_, [func, 1].concat(slice.call(arguments, 1)));
+  };
+
+  // Returns a function, that, when invoked, will only be triggered at most once
+  // during a given window of time. Normally, the throttled function will run
+  // as much as it can, without ever going more than once per `wait` duration;
+  // but if you'd like to disable the execution on the leading edge, pass
+  // `{leading: false}`. To disable execution on the trailing edge, ditto.
+  _.throttle = function(func, wait, options) {
+    var context, args, result;
+    var timeout = null;
+    var previous = 0;
+    options || (options = {});
+    var later = function() {
+      previous = options.leading === false ? 0 : new Date;
+      timeout = null;
+      result = func.apply(context, args);
+    };
+    return function() {
+      var now = new Date;
+      if (!previous && options.leading === false) previous = now;
+      var remaining = wait - (now - previous);
+      context = this;
+      args = arguments;
+      if (remaining <= 0) {
+        clearTimeout(timeout);
+        timeout = null;
+        previous = now;
+        result = func.apply(context, args);
+      } else if (!timeout && options.trailing !== false) {
+        timeout = setTimeout(later, remaining);
+      }
+      return result;
+    };
+  };
+
+  // Returns a function, that, as long as it continues to be invoked, will not
+  // be triggered. The function will be called after it stops being called for
+  // N milliseconds. If `immediate` is passed, trigger the function on the
+  // leading edge, instead of the trailing.
+  _.debounce = function(func, wait, immediate) {
+    var timeout, args, context, timestamp, result;
+    return function() {
+      context = this;
+      args = arguments;
+      timestamp = new Date();
+      var later = function() {
+        var last = (new Date()) - timestamp;
+        if (last < wait) {
+          timeout = setTimeout(later, wait - last);
+        } else {
+          timeout = null;
+          if (!immediate) result = func.apply(context, args);
+        }
+      };
+      var callNow = immediate && !timeout;
+      if (!timeout) {
+        timeout = setTimeout(later, wait);
+      }
+      if (callNow) result = func.apply(context, args);
+      return result;
+    };
+  };
+
+  // Returns a function that will be executed at most one time, no matter how
+  // often you call it. Useful for lazy initialization.
+  _.once = function(func) {
+    var ran = false, memo;
+    return function() {
+      if (ran) return memo;
+      ran = true;
+      memo = func.apply(this, arguments);
+      func = null;
+      return memo;
+    };
+  };
+
+  // Returns the first function passed as an argument to the second,
+  // allowing you to adjust arguments, run code before and after, and
+  // conditionally execute the original function.
+  _.wrap = function(func, wrapper) {
+    return function() {
+      var args = [func];
+      push.apply(args, arguments);
+      return wrapper.apply(this, args);
+    };
+  };
+
+  // Returns a function that is the composition of a list of functions, each
+  // consuming the return value of the function that follows.
+  _.compose = function() {
+    var funcs = arguments;
+    return function() {
+      var args = arguments;
+      for (var i = funcs.length - 1; i >= 0; i--) {
+        args = [funcs[i].apply(this, args)];
+      }
+      return args[0];
+    };
+  };
+
+  // Returns a function that will only be executed after being called N times.
+  _.after = function(times, func) {
+    return function() {
+      if (--times < 1) {
+        return func.apply(this, arguments);
+      }
+    };
+  };
+
+  // Object Functions
+  // ----------------
+
+  // Retrieve the names of an object's properties.
+  // Delegates to **ECMAScript 5**'s native `Object.keys`
+  _.keys = nativeKeys || function(obj) {
+    if (obj !== Object(obj)) throw new TypeError('Invalid object');
+    var keys = [];
+    for (var key in obj) if (_.has(obj, key)) keys.push(key);
+    return keys;
+  };
+
+  // Retrieve the values of an object's properties.
+  _.values = function(obj) {
+    var keys = _.keys(obj);
+    var length = keys.length;
+    var values = new Array(length);
+    for (var i = 0; i < length; i++) {
+      values[i] = obj[keys[i]];
+    }
+    return values;
+  };
+
+  // Convert an object into a list of `[key, value]` pairs.
+  _.pairs = function(obj) {
+    var keys = _.keys(obj);
+    var length = keys.length;
+    var pairs = new Array(length);
+    for (var i = 0; i < length; i++) {
+      pairs[i] = [keys[i], obj[keys[i]]];
+    }
+    return pairs;
+  };
+
+  // Invert the keys and values of an object. The values must be serializable.
+  _.invert = function(obj) {
+    var result = {};
+    var keys = _.keys(obj);
+    for (var i = 0, length = keys.length; i < length; i++) {
+      result[obj[keys[i]]] = keys[i];
+    }
+    return result;
+  };
+
+  // Return a sorted list of the function names available on the object.
+  // Aliased as `methods`
+  _.functions = _.methods = function(obj) {
+    var names = [];
+    for (var key in obj) {
+      if (_.isFunction(obj[key])) names.push(key);
+    }
+    return names.sort();
+  };
+
+  // Extend a given object with all the properties in passed-in object(s).
+  _.extend = function(obj) {
+    each(slice.call(arguments, 1), function(source) {
+      if (source) {
+        for (var prop in source) {
+          obj[prop] = source[prop];
+        }
+      }
+    });
+    return obj;
+  };
+
+  // Return a copy of the object only containing the whitelisted properties.
+  _.pick = function(obj) {
+    var copy = {};
+    var keys = concat.apply(ArrayProto, slice.call(arguments, 1));
+    each(keys, function(key) {
+      if (key in obj) copy[key] = obj[key];
+    });
+    return copy;
+  };
+
+   // Return a copy of the object without the blacklisted properties.
+  _.omit = function(obj) {
+    var copy = {};
+    var keys = concat.apply(ArrayProto, slice.call(arguments, 1));
+    for (var key in obj) {
+      if (!_.contains(keys, key)) copy[key] = obj[key];
+    }
+    return copy;
+  };
+
+  // Fill in a given object with default properties.
+  _.defaults = function(obj) {
+    each(slice.call(arguments, 1), function(source) {
+      if (source) {
+        for (var prop in source) {
+          if (obj[prop] === void 0) obj[prop] = source[prop];
+        }
+      }
+    });
+    return obj;
+  };
+
+  // Create a (shallow-cloned) duplicate of an object.
+  _.clone = function(obj) {
+    if (!_.isObject(obj)) return obj;
+    return _.isArray(obj) ? obj.slice() : _.extend({}, obj);
+  };
+
+  // Invokes interceptor with the obj, and then returns obj.
+  // The primary purpose of this method is to "tap into" a method chain, in
+  // order to perform operations on intermediate results within the chain.
+  _.tap = function(obj, interceptor) {
+    interceptor(obj);
+    return obj;
+  };
+
+  // Internal recursive comparison function for `isEqual`.
+  var eq = function(a, b, aStack, bStack) {
+    // Identical objects are equal. `0 === -0`, but they aren't identical.
+    // See the [Harmony `egal` proposal](http://wiki.ecmascript.org/doku.php?id=harmony:egal).
+    if (a === b) return a !== 0 || 1 / a == 1 / b;
+    // A strict comparison is necessary because `null == undefined`.
+    if (a == null || b == null) return a === b;
+    // Unwrap any wrapped objects.
+    if (a instanceof _) a = a._wrapped;
+    if (b instanceof _) b = b._wrapped;
+    // Compare `[[Class]]` names.
+    var className = toString.call(a);
+    if (className != toString.call(b)) return false;
+    switch (className) {
+      // Strings, numbers, dates, and booleans are compared by value.
+      case '[object String]':
+        // Primitives and their corresponding object wrappers are equivalent; thus, `"5"` is
+        // equivalent to `new String("5")`.
+        return a == String(b);
+      case '[object Number]':
+        // `NaN`s are equivalent, but non-reflexive. An `egal` comparison is performed for
+        // other numeric values.
+        return a != +a ? b != +b : (a == 0 ? 1 / a == 1 / b : a == +b);
+      case '[object Date]':
+      case '[object Boolean]':
+        // Coerce dates and booleans to numeric primitive values. Dates are compared by their
+        // millisecond representations. Note that invalid dates with millisecond representations
+        // of `NaN` are not equivalent.
+        return +a == +b;
+      // RegExps are compared by their source patterns and flags.
+      case '[object RegExp]':
+        return a.source == b.source &&
+               a.global == b.global &&
+               a.multiline == b.multiline &&
+               a.ignoreCase == b.ignoreCase;
+    }
+    if (typeof a != 'object' || typeof b != 'object') return false;
+    // Assume equality for cyclic structures. The algorithm for detecting cyclic
+    // structures is adapted from ES 5.1 section 15.12.3, abstract operation `JO`.
+    var length = aStack.length;
+    while (length--) {
+      // Linear search. Performance is inversely proportional to the number of
+      // unique nested structures.
+      if (aStack[length] == a) return bStack[length] == b;
+    }
+    // Objects with different constructors are not equivalent, but `Object`s
+    // from different frames are.
+    var aCtor = a.constructor, bCtor = b.constructor;
+    if (aCtor !== bCtor && !(_.isFunction(aCtor) && (aCtor instanceof aCtor) &&
+                             _.isFunction(bCtor) && (bCtor instanceof bCtor))) {
+      return false;
+    }
+    // Add the first object to the stack of traversed objects.
+    aStack.push(a);
+    bStack.push(b);
+    var size = 0, result = true;
+    // Recursively compare objects and arrays.
+    if (className == '[object Array]') {
+      // Compare array lengths to determine if a deep comparison is necessary.
+      size = a.length;
+      result = size == b.length;
+      if (result) {
+        // Deep compare the contents, ignoring non-numeric properties.
+        while (size--) {
+          if (!(result = eq(a[size], b[size], aStack, bStack))) break;
+        }
+      }
+    } else {
+      // Deep compare objects.
+      for (var key in a) {
+        if (_.has(a, key)) {
+          // Count the expected number of properties.
+          size++;
+          // Deep compare each member.
+          if (!(result = _.has(b, key) && eq(a[key], b[key], aStack, bStack))) break;
+        }
+      }
+      // Ensure that both objects contain the same number of properties.
+      if (result) {
+        for (key in b) {
+          if (_.has(b, key) && !(size--)) break;
+        }
+        result = !size;
+      }
+    }
+    // Remove the first object from the stack of traversed objects.
+    aStack.pop();
+    bStack.pop();
+    return result;
+  };
+
+  // Perform a deep comparison to check if two objects are equal.
+  _.isEqual = function(a, b) {
+    return eq(a, b, [], []);
+  };
+
+  // Is a given array, string, or object empty?
+  // An "empty" object has no enumerable own-properties.
+  _.isEmpty = function(obj) {
+    if (obj == null) return true;
+    if (_.isArray(obj) || _.isString(obj)) return obj.length === 0;
+    for (var key in obj) if (_.has(obj, key)) return false;
+    return true;
+  };
+
+  // Is a given value a DOM element?
+  _.isElement = function(obj) {
+    return !!(obj && obj.nodeType === 1);
+  };
+
+  // Is a given value an array?
+  // Delegates to ECMA5's native Array.isArray
+  _.isArray = nativeIsArray || function(obj) {
+    return toString.call(obj) == '[object Array]';
+  };
+
+  // Is a given variable an object?
+  _.isObject = function(obj) {
+    return obj === Object(obj);
+  };
+
+  // Add some isType methods: isArguments, isFunction, isString, isNumber, isDate, isRegExp.
+  each(['Arguments', 'Function', 'String', 'Number', 'Date', 'RegExp'], function(name) {
+    _['is' + name] = function(obj) {
+      return toString.call(obj) == '[object ' + name + ']';
+    };
+  });
+
+  // Define a fallback version of the method in browsers (ahem, IE), where
+  // there isn't any inspectable "Arguments" type.
+  if (!_.isArguments(arguments)) {
+    _.isArguments = function(obj) {
+      return !!(obj && _.has(obj, 'callee'));
+    };
+  }
+
+  // Optimize `isFunction` if appropriate.
+  if (typeof (/./) !== 'function') {
+    _.isFunction = function(obj) {
+      return typeof obj === 'function';
+    };
+  }
+
+  // Is a given object a finite number?
+  _.isFinite = function(obj) {
+    return isFinite(obj) && !isNaN(parseFloat(obj));
+  };
+
+  // Is the given value `NaN`? (NaN is the only number which does not equal itself).
+  _.isNaN = function(obj) {
+    return _.isNumber(obj) && obj != +obj;
+  };
+
+  // Is a given value a boolean?
+  _.isBoolean = function(obj) {
+    return obj === true || obj === false || toString.call(obj) == '[object Boolean]';
+  };
+
+  // Is a given value equal to null?
+  _.isNull = function(obj) {
+    return obj === null;
+  };
+
+  // Is a given variable undefined?
+  _.isUndefined = function(obj) {
+    return obj === void 0;
+  };
+
+  // Shortcut function for checking if an object has a given property directly
+  // on itself (in other words, not on a prototype).
+  _.has = function(obj, key) {
+    return hasOwnProperty.call(obj, key);
+  };
+
+  // Utility Functions
+  // -----------------
+
+  // Run Underscore.js in *noConflict* mode, returning the `_` variable to its
+  // previous owner. Returns a reference to the Underscore object.
+  _.noConflict = function() {
+    root._ = previousUnderscore;
+    return this;
+  };
+
+  // Keep the identity function around for default iterators.
+  _.identity = function(value) {
+    return value;
+  };
+
+  // Run a function **n** times.
+  _.times = function(n, iterator, context) {
+    var accum = Array(Math.max(0, n));
+    for (var i = 0; i < n; i++) accum[i] = iterator.call(context, i);
+    return accum;
+  };
+
+  // Return a random integer between min and max (inclusive).
+  _.random = function(min, max) {
+    if (max == null) {
+      max = min;
+      min = 0;
+    }
+    return min + Math.floor(Math.random() * (max - min + 1));
+  };
+
+  // List of HTML entities for escaping.
+  var entityMap = {
+    escape: {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#x27;'
+    }
+  };
+  entityMap.unescape = _.invert(entityMap.escape);
+
+  // Regexes containing the keys and values listed immediately above.
+  var entityRegexes = {
+    escape:   new RegExp('[' + _.keys(entityMap.escape).join('') + ']', 'g'),
+    unescape: new RegExp('(' + _.keys(entityMap.unescape).join('|') + ')', 'g')
+  };
+
+  // Functions for escaping and unescaping strings to/from HTML interpolation.
+  _.each(['escape', 'unescape'], function(method) {
+    _[method] = function(string) {
+      if (string == null) return '';
+      return ('' + string).replace(entityRegexes[method], function(match) {
+        return entityMap[method][match];
+      });
+    };
+  });
+
+  // If the value of the named `property` is a function then invoke it with the
+  // `object` as context; otherwise, return it.
+  _.result = function(object, property) {
+    if (object == null) return void 0;
+    var value = object[property];
+    return _.isFunction(value) ? value.call(object) : value;
+  };
+
+  // Add your own custom functions to the Underscore object.
+  _.mixin = function(obj) {
+    each(_.functions(obj), function(name) {
+      var func = _[name] = obj[name];
+      _.prototype[name] = function() {
+        var args = [this._wrapped];
+        push.apply(args, arguments);
+        return result.call(this, func.apply(_, args));
+      };
+    });
+  };
+
+  // Generate a unique integer id (unique within the entire client session).
+  // Useful for temporary DOM ids.
+  var idCounter = 0;
+  _.uniqueId = function(prefix) {
+    var id = ++idCounter + '';
+    return prefix ? prefix + id : id;
+  };
+
+  // By default, Underscore uses ERB-style template delimiters, change the
+  // following template settings to use alternative delimiters.
+  _.templateSettings = {
+    evaluate    : /<%([\s\S]+?)%>/g,
+    interpolate : /<%=([\s\S]+?)%>/g,
+    escape      : /<%-([\s\S]+?)%>/g
+  };
+
+  // When customizing `templateSettings`, if you don't want to define an
+  // interpolation, evaluation or escaping regex, we need one that is
+  // guaranteed not to match.
+  var noMatch = /(.)^/;
+
+  // Certain characters need to be escaped so that they can be put into a
+  // string literal.
+  var escapes = {
+    "'":      "'",
+    '\\':     '\\',
+    '\r':     'r',
+    '\n':     'n',
+    '\t':     't',
+    '\u2028': 'u2028',
+    '\u2029': 'u2029'
+  };
+
+  var escaper = /\\|'|\r|\n|\t|\u2028|\u2029/g;
+
+  // JavaScript micro-templating, similar to John Resig's implementation.
+  // Underscore templating handles arbitrary delimiters, preserves whitespace,
+  // and correctly escapes quotes within interpolated code.
+  _.template = function(text, data, settings) {
+    var render;
+    settings = _.defaults({}, settings, _.templateSettings);
+
+    // Combine delimiters into one regular expression via alternation.
+    var matcher = new RegExp([
+      (settings.escape || noMatch).source,
+      (settings.interpolate || noMatch).source,
+      (settings.evaluate || noMatch).source
+    ].join('|') + '|$', 'g');
+
+    // Compile the template source, escaping string literals appropriately.
+    var index = 0;
+    var source = "__p+='";
+    text.replace(matcher, function(match, escape, interpolate, evaluate, offset) {
+      source += text.slice(index, offset)
+        .replace(escaper, function(match) { return '\\' + escapes[match]; });
+
+      if (escape) {
+        source += "'+\n((__t=(" + escape + "))==null?'':_.escape(__t))+\n'";
+      }
+      if (interpolate) {
+        source += "'+\n((__t=(" + interpolate + "))==null?'':__t)+\n'";
+      }
+      if (evaluate) {
+        source += "';\n" + evaluate + "\n__p+='";
+      }
+      index = offset + match.length;
+      return match;
+    });
+    source += "';\n";
+
+    // If a variable is not specified, place data values in local scope.
+    if (!settings.variable) source = 'with(obj||{}){\n' + source + '}\n';
+
+    source = "var __t,__p='',__j=Array.prototype.join," +
+      "print=function(){__p+=__j.call(arguments,'');};\n" +
+      source + "return __p;\n";
+
+    try {
+      render = new Function(settings.variable || 'obj', '_', source);
+    } catch (e) {
+      e.source = source;
+      throw e;
+    }
+
+    if (data) return render(data, _);
+    var template = function(data) {
+      return render.call(this, data, _);
+    };
+
+    // Provide the compiled function source as a convenience for precompilation.
+    template.source = 'function(' + (settings.variable || 'obj') + '){\n' + source + '}';
+
+    return template;
+  };
+
+  // Add a "chain" function, which will delegate to the wrapper.
+  _.chain = function(obj) {
+    return _(obj).chain();
+  };
+
+  // OOP
+  // ---------------
+  // If Underscore is called as a function, it returns a wrapped object that
+  // can be used OO-style. This wrapper holds altered versions of all the
+  // underscore functions. Wrapped objects may be chained.
+
+  // Helper function to continue chaining intermediate results.
+  var result = function(obj) {
+    return this._chain ? _(obj).chain() : obj;
+  };
+
+  // Add all of the Underscore functions to the wrapper object.
+  _.mixin(_);
+
+  // Add all mutator Array functions to the wrapper.
+  each(['pop', 'push', 'reverse', 'shift', 'sort', 'splice', 'unshift'], function(name) {
+    var method = ArrayProto[name];
+    _.prototype[name] = function() {
+      var obj = this._wrapped;
+      method.apply(obj, arguments);
+      if ((name == 'shift' || name == 'splice') && obj.length === 0) delete obj[0];
+      return result.call(this, obj);
+    };
+  });
+
+  // Add all accessor Array functions to the wrapper.
+  each(['concat', 'join', 'slice'], function(name) {
+    var method = ArrayProto[name];
+    _.prototype[name] = function() {
+      return result.call(this, method.apply(this._wrapped, arguments));
+    };
+  });
+
+  _.extend(_.prototype, {
+
+    // Start chaining a wrapped Underscore object.
+    chain: function() {
+      this._chain = true;
+      return this;
+    },
+
+    // Extracts the result from a wrapped and chained object.
+    value: function() {
+      return this._wrapped;
+    }
+
+  });
+
+}).call(this);
+
+},{}],16:[function(require,module,exports){
 /*  point.js - A 2D point.
     Copyright 2004-5, 2013 Rhea Myers <rhea@myers.studio>
   
@@ -494,173 +2473,127 @@ module.exports = Palette;
 */
 
 var Point = function (x, y) {
-  this.x = x;
-  this.y = y;
-};
+	this.x = x;
+	this.y = y;
+}
 
 Point.prototype.distance_to_point = function (p) {
   return Math.sqrt (Math.pow (p.x - this.x, 2) +
-                    Math.pow (p.y - this.y, 2));
-};
+			        Math.pow (p.y - this.y, 2));
+}
 
 module.exports = Point;
 
-},{}],5:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 /*  polyline.js - A polyline.
     Copyright 2004-5, 2013 Rhea Myers <rhea@myers.studio>
-    Copyright 2023 Myers Studio Ltd.
-
+  
     This file is part of draw-something js.
-
+    
     draw-something js is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 3 of the License, or
     (at your option) any later version.
-
+    
     draw-something js is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
-
+    
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-var Point = require("./point");
+var Point = require('./point');
 
 var Polyline = function () 
 {
   this.points = [];
-};
+}
 
 Polyline.prototype.append = function (p)
 {
   // Push is slllllllllow
   this.points.push (p);
-};
+}
 
-Polyline.prototype.random_point_in_bounds = function (
-  rng, x, y, width, height
-) {
-    var x_pos = rng.random () * width;
-    var y_pos = rng.random () * height;
-    return new Point (x + x_pos, y + y_pos);
-};
-
-Polyline.prototype.random_points_in_bounds = function (rng, x, y, width,
-  height, count) {
+Polyline.prototype.random_points_in_bounds = function (x, y, width, height,
+                                                       count) {
   for (var i = 0; i < count; i++)
   {
-    var p = this.random_point_in_bounds(rng, x, y, width, height);
+	var x_pos = Math.random () * width;
+	var y_pos = Math.random () * height;
+	var p = new Point (x + x_pos, y + y_pos);
     this.append(p);
   }
-};
+}
 
 // http://www.gamasutra.com/features/20000210/lander_l3.htm
 
 Polyline.prototype.nearest_point_on_line = function (a, b, c) {
   // SEE IF a IS THE NEAREST POINT - ANGLE IS OBTUSE
   var dot_ta = (c.x - a.x) * (b.x - a.x) + 
-    (c.y - a.y) * (b.y - a.y);
+	  (c.y - a.y) * (b.y - a.y);
   if (dot_ta <= 0) // IT IS OFF THE AVERTEX
   {
-    return new Point (a.x , a.y);
+	return new Point (a.x , a.y);
   }
   var dot_tb = (c.x - b.x) * (a.x - b.x) + 
-    (c.y - b.y) * (a.y - b.y);
+	  (c.y - b.y) * (a.y - b.y);
   // SEE IF b IS THE NEAREST POINT - ANGLE IS OBTUSE
   if (dot_tb <= 0)
   {
-    return new Point (b.x, b.y);
+	return new Point (b.x, b.y);
   }
   // FIND THE REAL NEAREST POINT ON THE LINE SEGMENT
   // BASED ON RATIO
   var nearest_x = a.x + ((b.x - a.x) * dot_ta) / 
-    (dot_ta + dot_tb);
+	  (dot_ta + dot_tb);
   var nearest_y = a.y + ((b.y - a.y) * dot_ta) / 
-    (dot_ta + dot_tb);
+	  (dot_ta + dot_tb);
   return new Point (nearest_x, nearest_y);
-};
+}
 
 Polyline.prototype.distance_from_line_to_point = function (a, b, c)
 {
   var nearest = this.nearest_point_on_line (a, b, c);
   return nearest.distance_to_point (c);
-};
+}
 
 Polyline.prototype.distance_to_point = function (p)
 {
   var distance_to_poly = Number.MAX_VALUE;
   for (var i = 1; i < this.points.length; i++)
   {
-    var a = this.points[i - 1];
-    var b = this.points[i];
-    var d = this.distance_from_line_to_point (a, b, p);
-    if (d < distance_to_poly)
-    {
-      distance_to_poly = d;
-    }
+	var a = this.points[i - 1];
+	var b = this.points[i];
+		var d = this.distance_from_line_to_point (a, b, p);
+	if (d < distance_to_poly)
+	{
+	  distance_to_poly = d;
+	}
   }
   return distance_to_poly;
-};
-
-// Generate random points that will not result in the polyline having
-// any points too close to its lines.
-// This is to avoid the pen getting trapped by small gaps between points
-// or between points and lines.
-
-Polyline.prototype.random_points_in_bounds_sep = function (
-  rng, x, y, width, height, count, sep
-) {
-  if (count < 2) {
-    throw new Error('We must generate at least 2 points!');
-  }
-  let genp = () => this.random_point_in_bounds(rng, x, y, width, height);
-  // We need at least one line to test distances from.
-  this.append(genp());
-  this.append(genp());
-  while (this.points.length < count) {
-    const p = genp();
-    // Is this point to close to any existing lines?
-    const dist = this.distance_to_point(p);
-    if (dist < sep) {
-      continue;
-    }
-    // Are any existing points too close to the new line segment
-    // that would be formed by adding the new point?
-    let ok = true;
-    const q = this.points[this.points.length - 1];
-    for (let i = 0; i < this.points.length - 1; i++) {
-      const d = this.distance_from_line_to_point (q, p, this.points[i]);
-      if (d < sep) {
-        ok = false;
-        break;
-      }
-    }
-    if (ok) {
-      this.append(p);
-    }
-  }
-};
+}
 
 Polyline.prototype.top_leftmost_point = function ()
 {
   var top_leftmost = this.points[0];
   for (var i = 1; i < this.points.length; i++)
   {
-    if ((this.points[i].y <= top_leftmost.y) ||
-    ((this.points[i].y == top_leftmost.y) &&
-     ((this.points[i].x < top_leftmost.x)))) 
-    {
-      top_leftmost = this.points[i];
-    }
+	if ((this.points[i].y <= top_leftmost.y) ||
+		((this.points[i].y == top_leftmost.y) &&
+		 ((this.points[i].x < top_leftmost.x)))) 
+	{
+	  top_leftmost = this.points[i];
+	}
   }
   return new Point (top_leftmost.x, top_leftmost.y);
-};
+}
 
 module.exports = Polyline;
 
-},{"./point":4}],6:[function(require,module,exports){
+},{"./point":16}],18:[function(require,module,exports){
 /*  turtle.js - A classic computer graphics 'turtle'.
     Copyright 2004-5, 2013 Rhea Myers <rhea@myers.studio>
   
@@ -680,7 +2613,7 @@ module.exports = Polyline;
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-var Point = require("./point");
+var Point = require('./point');
 
 var DEGREES_TO_RADIANS = (Math.PI * 2.0) / 360.0;
 
@@ -690,56 +2623,56 @@ var Turtle = function (position, forward_step, turn_step) {
   this.position = position;
   this.forward_step = forward_step;
   this.turn_step = turn_step;
-};
+}
 
 Turtle.prototype.left = function () {
   this.direction -= this.turn_step;
-};
+}
 
 Turtle.prototype.right = function ()
 {
   this.direction += this.turn_step;
-};
+}
 
 Turtle.prototype.forward = function ()
 {
   this.position = this.next_point_would_be ();
-};
+}
 
 Turtle.prototype.next_point_would_be = function ()
 {
   var x = this.position.x +
-    (this.forward_step * Math.sin (this.direction * DEGREES_TO_RADIANS));
+	  (this.forward_step * Math.sin (this.direction * DEGREES_TO_RADIANS));
   var y = this.position.y +
-    (this.forward_step * Math.cos (this.direction * DEGREES_TO_RADIANS));
+	  (this.forward_step * Math.cos (this.direction * DEGREES_TO_RADIANS));
   return new Point (x, y);
-};
+}
 
 module.exports = Turtle;
 
-},{"./point":4}],"drawing_svg":[function(require,module,exports){
+},{"./point":16}],"drawing_svg":[function(require,module,exports){
 /*  drawing_svg.js - Draw to SVG.
     Copyright 2004-5, 2013 Rhea Myers <rhea@myers.studio>
-    Copyright 2023 Myers Studio, Ltd.
-
+  
     This file is part of draw-something js.
-
+    
     draw-something js is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 3 of the License, or
     (at your option) any later version.
-
+    
     draw-something js is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
-
+    
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-var MersenneTwister = require("./MersenneTwister");
-var Drawing = require("./drawing");
+var builder = require('xmlbuilder');
+
+var Drawing = require('./drawing');
 
 var DrawingSVG = function (svg, num_points, randseed) {
   this.svg = svg;
@@ -778,80 +2711,12 @@ var DrawingSVG = function (svg, num_points, randseed) {
   outline.style.strokeLinecap = "round";
 };
 
-DrawingSVG.prototype.update = function () {
-  var active = false;
-  if (! this.drawing.should_finish ()) {
+DrawingSVG.prototype.draw = function () {
+  while(! this.drawing.should_finish ()) {
     this.drawing.to_next_point ();
-    active = true;
   }
-  return active;
-};
-
-DrawingSVG.prototype.drawSkeleton = function() {
-  const skeleton = this.svg.getElementById("skeleton");
-  skeleton.setAttributeNS(
-    null,
-    'd',
-    this.polyline_to_path(this.drawing.skeleton)
-  );
-};
-
-DrawingSVG.prototype.drawOutline = function() {
-  const skeleton = this.svg.getElementById("outline");
-  skeleton.setAttributeNS(
-    null,
-    'd',
-    this.polyline_to_path(this.drawing.outline)
-  );
-};
-
-DrawingSVG.prototype.drawFill = function() {
-  const fill = this.svg.getElementById("fill");
-  fill.setAttributeNS(
-    null,
-    'd',
-    this.polyline_to_path(this.drawing.outline)
-  );
-
-};
-
-DrawingSVG.prototype.drawInProgress = function() {
-  this.drawSkeleton();
-  this.drawOutline();
-};
-
-DrawingSVG.prototype.drawComplete = function() {
-  const background = this.svg.getElementById("background");
-  background.style.stroke = 'none';
-  background.style.strokeWidth = "0";
-  background.style.fill = this.drawing.palette.to_css(
-    this.drawing.palette.background
-  );
-  const skeleton = this.svg.getElementById("skeleton");
-  skeleton.style.stroke = "none";
-  skeleton.style.strokeWidth = "0";
-  this.drawOutline();
-  this.drawFill();
-};
-
-DrawingSVG.prototype.polyline_to_path = function (polyline) {
-  var d = " M " + polyline.points[0].x.toFixed(3)
-      + " " + polyline.points[0].y.toFixed(3);
-  for (var i = 1; i < (polyline.points.length); i++) {
-    d += " L " + polyline.points[i].x.toFixed(3)
-      + " " + polyline.points[i].y.toFixed(3);
-  }
-  return d;
-};
-
-DrawingSVG.prototype.clear_path = function (element) {
-  element.setAttributeNS(
-    null,
-    'd',
-    ""
-  );
 };
 
 module.exports = DrawingSVG;
 
-},{"./MersenneTwister":1,"./drawing":2}]},{},["drawing_svg"]);
+},{"./drawing":1,"xmlbuilder":14}]},{},["drawing_svg"]);
